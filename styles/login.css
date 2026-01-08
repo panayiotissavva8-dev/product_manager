@@ -1,0 +1,90 @@
+html{
+    background-color: #0B1324;
+}
+
+body{
+    width:auto;
+    margin: auto;
+    padding: auto;
+}
+
+img{
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+}
+
+h1{
+    text-align: center;
+    color:white;
+    margin: 0;
+    padding: 20px 0;
+    display: block;
+    text-shadow: 3px 3px 1px black;
+
+}
+
+h2{
+    text-align: center;
+    color:white;
+    margin: 0;
+    padding: 20px 0;
+    display: block;
+    text-shadow: 3px 3px 1px black;
+
+}
+
+h3{
+    text-align: center;
+    color:white;
+    margin: 0;
+    padding: 20px 0;
+    display: block;
+    text-shadow: 3px 3px 1px black;
+
+}
+
+h4{
+    text-align: center;
+    color:white;
+    margin: 0;
+    padding: 20px 0;
+    display: block;
+    text-shadow: 3px 3px 1px black;
+
+}
+
+#password{
+    align-self: center;
+    display: flex;
+    margin: 0 auto;
+
+    
+
+}
+
+#username{
+    align-self: center;
+    display: flex;
+    margin: 0 auto;
+}
+
+#sign{
+    align-self: center;
+    display: flex;
+    margin: 0 auto;
+}
+    
+
+#contact{
+      margin-top: auto 0;
+    padding: 20px 0;
+    text-align: center;
+    color: #9AA4BF;
+}
+
+#link{
+    color:white;
+}
+
+
