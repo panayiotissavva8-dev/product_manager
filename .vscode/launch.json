@@ -1,0 +1,48 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and Run Product Manager",
+            "type": "shell",
+            "command": "clang++",
+            "args": [
+                "*.cpp",
+                "-o",
+                "product_manager_app",
+                "-lsqlite3",
+                "-lpthread",
+                "-ldl"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Compile all C++ files and link SQLite"
+        },
+        {
+            "label": "Run Product Manager",
+            "type": "shell",
+            "command": "./product_manager_app",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "dependsOn": "Build and Run Product Manager"
+        }
+    ],
+    "configurations": [
+        {
+            "name": "Launch Product Manager",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/product_manager_app",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build and Run Product Manager"
+        }
+    ]
+}

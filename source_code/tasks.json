@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Product Manager",
+      "type": "shell",
+      "command": "clang++",
+      "args": [
+        "product_manager.cpp",
+        "-std=c++17",
+        "-lsqlite3",
+        "-o",
+        "product_manager"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}
