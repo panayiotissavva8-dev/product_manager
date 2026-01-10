@@ -117,6 +117,7 @@ struct Product {
     void deleteProduct(sqlite3* db, vector<Product>& products) {
     int target;
     cout << "<--- DELETE PRODUCT --->\n";
+    cout<<"Enter product code to delete:\n";
     cin >> target;
 
     products.erase(
@@ -135,14 +136,26 @@ struct Product {
     void updateProduct(vector<Product>& products) {
     int target;
     cout << "<--- UPDATE PRODUCT --->\n";
+    cout<<"Enter product code to update:\n";
     cin >> target;
 
     for (auto& p : products) {
         if (p.code == target) {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Enter new brand:\n";
             getline(cin, p.brand);
+            cout << "Enter new name:\n";
             getline(cin, p.name);
-            cin >> p.quantity >> p.stock_alert >> p.cost >> p.price >> p.discount;
+            cout<<"Enter new quantity:\n";
+             cin >> p.quantity;
+            cout<<"Enter new stock alert:\n";
+            cin >> p.stock_alert;
+            cout<<"Enter new cost:\n";
+            cin >> p.cost;
+            cout<<"Enter new price:\n";
+            cin >> p.price;
+            cout<<"Enter new discount:\n";
+            cin >> p.discount;
             return;
         }
     }
@@ -151,7 +164,11 @@ struct Product {
 //lets user sell a product and records it to a sales audit 
    void sellProduct(vector<Product>& products, string user, int& total_sales) {
     int target, qty;
-    cin >> target >> qty;
+    cout << "<--- SELL PRODUCT --->\n";
+    cout << "Enter product code to sell:\n";
+    cin >> target;
+    cout<<"Enter quantity to sell:\n";
+    cin >> qty;
 
     for (auto& p : products) {
         if (p.code == target) {
@@ -163,9 +180,7 @@ struct Product {
             p.quantity -= qty;
             total_sales += qty;
 
-            ofstream out("sales_audit.txt", ios::app);
-            out << user << " sold " << qty << " units of " << target << "\n";
-            out.close();
+            cout << "Sold " << qty << " of " << p.name << "\n";
             return;
         }
     }
@@ -356,6 +371,18 @@ void AllProducts(const vector<Product>& products) {
             : (p.quantity * p.price);
 
         total_value += value;
+        
+        cout<< left
+             << setw(8) << "CODE"
+             << setw(15) << "BRAND"
+             << setw(18) << "NAME"
+             << setw(10) << "QUANTITY"
+             << setw(13) << "STOCK ALERT"
+             << setw(12) << "COST"
+             << setw(12) << "PRICE"
+             << setw(12) << "DISCOUNT"
+             << setw(18) << "TOTAL COST"
+             << setw(18) << "TOTAL VALUE" << endl;
 
         cout << setw(8) << p.code
              << setw(15) << p.brand
@@ -472,9 +499,6 @@ string UserLogin(sqlite3* db, string &current_user_name, string &current_user_pa
             login_count++;
             cout << "Wrong username or password\n";
         }
-    } else {
-        login_count++;
-        cout << "Wrong username or password\n";
     }
 
     sqlite3_finalize(stmt);
@@ -485,46 +509,62 @@ string UserLogin(sqlite3* db, string &current_user_name, string &current_user_pa
 
 
 //logs in file the time and user information when they entered 
-void User_in_Audit(sqlite3* db, string current_user_name, string current_user_pass, string current_user_role, int user_count){
-     sqlite3_stmt* stmt;
+void User_in_Audit(sqlite3* db,  string& current_user_name,  string& current_user_role) {
+    sqlite3_stmt* stmt;
 
     time_t now = time(0);
-    char* dt = ctime(&now);
+    char dt[26]; // ctime_r safe version
+    ctime_r(&now, dt);
+    dt[strcspn(dt, "\n")] = 0; // remove newline
 
-    const char* sql =
-        "INSERT INTO audit_logs (username, password, role, action, timestamp) "
-        "VALUES (?, ?, ?, ?, ?);";
+    const char* sql = "INSERT INTO audit (username, role, time) VALUES (?, ?, ?);";
 
-    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-    sqlite3_bind_text(stmt, 1, current_user_name.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, current_user_pass.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 3, current_user_role.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, "logged in", -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 5, dt, -1, SQLITE_STATIC);
-    sqlite3_step(stmt);
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare audit insert: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, current_user_name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, current_user_role.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, dt, -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        cerr << "Failed to insert audit record: " << sqlite3_errmsg(db) << endl;
+    } else {
+        cout << "Audit logged successfully.\n";
+    }
+
     sqlite3_finalize(stmt);
 }
 
-//logs in file the time and user information when they left
-void user_out_audit(sqlite3* db, string current_user_name, string current_user_pass, string current_user_role, int user_count){
-        sqlite3_stmt* stmt;
-    
-        time_t now = time(0);
-        char* dt = ctime(&now);
-    
-        const char* sql =
-            "INSERT INTO audit_logs (username, password, role, timestamp) "
-            "VALUES (?, ?, ?, ?);";
-    
-        sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-        sqlite3_bind_text(stmt, 1, current_user_name.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 2, current_user_pass.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 3, current_user_role.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 4, "logged out", -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 5, dt, -1, SQLITE_STATIC);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
+void user_out_audit(sqlite3* db,  string& current_user_name,  string& current_user_role) {
+    sqlite3_stmt* stmt;
+
+    time_t now = time(0);
+    char dt[26];
+    ctime_r(&now, dt);
+    dt[strcspn(dt, "\n")] = 0;
+
+    const char* sql = "INSERT INTO audit (username, role, time) VALUES (?, ?, ?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare audit insert: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, current_user_name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, current_user_role.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, dt, -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        cerr << "Failed to insert audit record: " << sqlite3_errmsg(db) << endl;
+    } else {
+        cout << "Audit logged successfully.\n";
+    }
+
+    sqlite3_finalize(stmt);
 }
+
 
 
 //calls each function depending on user input
@@ -551,10 +591,35 @@ int main(){
     int total_sales = 0;
     int sum_sold = 0;
 
-    sqlite3* db;
+    sqlite3* db_products;
+    sqlite3* db_users;
+    sqlite3* db_audit;
 
 
-if (sqlite3_open("users.db", &db) != SQLITE_OK) {
+
+    int r_c = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/user_audit.db", &db_audit); // must be a persistent file
+if (r_c != SQLITE_OK) {
+    cerr << "Cannot open database: " << sqlite3_errmsg(db_audit) << endl;
+    sqlite3_close(db_audit);
+    return 1;
+} else {
+    cout << "Database opened successfully at: user_audit.db" << endl;
+}
+
+
+ 
+    int rc = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/products.db", &db_products); // must be a persistent file
+if (rc != SQLITE_OK) {
+    cerr << "Cannot open database: " << sqlite3_errmsg(db_products) << endl;
+    sqlite3_close(db_products);
+    return 1;
+} else {
+    cout << "Database opened successfully at: product_manager.db" << endl;
+}
+
+
+
+if (sqlite3_open("users.db", &db_users) != SQLITE_OK) {
     cout << "Cannot open users database\n";
     return 1;
 }
@@ -568,14 +633,13 @@ cout << "1. Login\n2. Add User\nChoose an option: ";
 cin >> choice;
 
 if (choice == 2) {
-    AddUser(db); // add user to database
+    AddUser(db_users); // add user to database
     cout << "Now login with your credentials.\n";
 }
 
-current_user_role = UserLogin(db, current_user_name, current_user_pass, login_count);
-
+current_user_role = UserLogin(db_users, current_user_name, current_user_pass, login_count);
 while (current_user_role == "error" && login_count < 3) {
-    current_user_role = UserLogin(db, current_user_name, current_user_pass, login_count);
+    current_user_role = UserLogin(db_users, current_user_name, current_user_pass, login_count);
 }
 
 if (login_count == 3) {
@@ -583,10 +647,10 @@ if (login_count == 3) {
 }
 
 
- loadProducts(db, products);
+ loadProducts(db_products, products);
 
     if(current_user_role == "manager"){
-        User_in_Audit(db, current_user_name, current_user_pass, current_user_role, user_count);
+        User_in_Audit(db_audit, current_user_name, current_user_role);
 
     do{     
         cout<<" ""<--- PRODUCT MANAGER --->"<<endl;
@@ -596,29 +660,29 @@ if (login_count == 3) {
         cout<<"4. Sell a product"<<endl;
         cout<<"5. Search for a product"<<endl;
         cout<<"6. View all products"<<endl;
-        cout<<"7. View sales infographics (work in progress)"<<endl;
-        cout<<"8. Exit product manager"<<endl;
-        cout<<"Enter action to perform:"<<endl;
+        cout<<"7. View sales infographics (work in progress)"<<endl;            // option 2,3,4 not working                                                                     
+        cout<<"8. Exit product manager"<<endl;    
+        cout<<"Enter action to perform:"<<endl;                                   //products not saving on database (critical)
         cin>>action;
         
 
         if(action == 1){
            addProduct(products);
            bubbleSort(products);
-           saveProducts(db, products);
+           saveProducts(db_products, products);
         }
         else if(action == 2){
             updateProduct(products);
              bubbleSort(products);
-             saveProducts(db, products);
+             saveProducts(db_products, products);
         }
         else if(action == 3){
-            deleteProduct(db, products);
-            saveProducts(db, products);
+            deleteProduct(db_products, products);
+            saveProducts(db_products, products);
         }
         else if(action == 4){
             sellProduct(products, current_user_name, total_sales);
-            saveProducts(db, products);
+            saveProducts(db_products, products);
         }
         else if(action == 5){
             do{
@@ -652,13 +716,13 @@ if (login_count == 3) {
 
     }while(action != 8);
 
-    user_out_audit(db, current_user_name, current_user_pass, current_user_role, user_count);
+    user_out_audit(db_audit,current_user_name, current_user_role);
     cout<<"Thank you for using product manager"<<endl;
     cout<<" <--- Prodexa Enterprises Ltd --->"<<endl;
 }
 
     if(current_user_role == "cashier"){
-        User_in_Audit(db, current_user_name, current_user_pass, current_user_role, user_count);
+        User_in_Audit(db_audit, current_user_name, current_user_role);
     
     do{
         cout<<"1. Sell a product"<<endl;
@@ -670,7 +734,7 @@ if (login_count == 3) {
 
         if(action == 1){
             sellProduct(products, current_user_name, total_sales);
-            saveProducts(db, products);
+            saveProducts(db_products, products);
         }
 
         else if(action == 2){
@@ -702,7 +766,7 @@ if (login_count == 3) {
 
     }while(action != 4);
 
-    user_out_audit(db, current_user_name, current_user_pass, current_user_role, user_count);
+    user_out_audit(db_audit, current_user_name, current_user_role);
     cout<<"Thank you for using product manager"<<endl;
     cout<<" <--- Prodexa Enterprises Ltd --->"<<endl;
 }
@@ -710,4 +774,6 @@ if (login_count == 3) {
     return 0;
 }
 
-//clang++ product_manager.cpp -o product_manager_app -lsqlite3 -lpthread -ldl && ./product_manager_app
+
+/* cd source_code
+clang++ product_manager.cpp -o product_manager_app -lsqlite3 -lpthread -ldl && ./product_manager_app */
