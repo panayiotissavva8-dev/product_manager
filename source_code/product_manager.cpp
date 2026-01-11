@@ -162,7 +162,7 @@ struct Product {
 }
 
 //lets user sell a product and records it to a sales audit 
-   void sellProduct(vector<Product>& products, string user, int& total_sales) {
+   void sellProduct(sqlite3* db, vector<Product>& products, string user, int& total_sales) {
     int target, qty;
     cout << "<--- SELL PRODUCT --->\n";
     cout << "Enter product code to sell:\n";
@@ -179,6 +179,21 @@ struct Product {
 
             p.quantity -= qty;
             total_sales += qty;
+
+            sqlite3_stmt* stmt;
+            sqlite3_prepare_v2(db, "INSERT INTO sales (user, code, brand, quantity, price, discount,total_value) VALUES (?, ?, ?, ?, ?, ?, ?);", -1, &stmt, nullptr);
+            sqlite3_bind_text(stmt, 1, user.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stmt, 2, target);
+            sqlite3_bind_text(stmt, 3, p.brand.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stmt, 4, qty);
+            sqlite3_bind_double(stmt, 5, p.price);
+            sqlite3_bind_double(stmt, 6, p.discount);
+            double total_value = (p.discount != 0)
+                ? (qty * p.price) - (p.discount * qty)
+                : (qty * p.price);
+            sqlite3_bind_double(stmt, 7, total_value);
+            sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
 
             cout << "Sold " << qty << " of " << p.name << "\n";
             return;
@@ -594,11 +609,20 @@ int main(){
     sqlite3* db_products;
     sqlite3* db_users;
     sqlite3* db_audit;
+    sqlite3* db_sales;
 
 
+    int rc_sales = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/sales.db", &db_sales); // must be a persistent file
+if (rc_sales != SQLITE_OK) {
+    cerr << "Cannot open database: " << sqlite3_errmsg(db_sales) << endl;
+    sqlite3_close(db_sales);
+    return 1;
+} else {
+    cout << "Database opened successfully at: sales.db" << endl;
+}
 
-    int r_c = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/user_audit.db", &db_audit); // must be a persistent file
-if (r_c != SQLITE_OK) {
+    int rc_audit = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/user_audit.db", &db_audit); // must be a persistent file
+if (rc_audit != SQLITE_OK) {
     cerr << "Cannot open database: " << sqlite3_errmsg(db_audit) << endl;
     sqlite3_close(db_audit);
     return 1;
@@ -606,24 +630,25 @@ if (r_c != SQLITE_OK) {
     cout << "Database opened successfully at: user_audit.db" << endl;
 }
 
-
  
-    int rc = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/products.db", &db_products); // must be a persistent file
-if (rc != SQLITE_OK) {
+   int rc_pro = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/products.db", &db_products); // must be a persistent file
+if (rc_pro != SQLITE_OK) {
     cerr << "Cannot open database: " << sqlite3_errmsg(db_products) << endl;
     sqlite3_close(db_products);
     return 1;
 } else {
-    cout << "Database opened successfully at: product_manager.db" << endl;
+    cout << "Database opened successfully at: products.db" << endl;
 }
 
 
-
-if (sqlite3_open("users.db", &db_users) != SQLITE_OK) {
-    cout << "Cannot open users database\n";
+    int rc_user = sqlite3_open("/Users/panayiotissavva/Documents/product_manager/source_code/users.db", &db_users); // must be a persistent file
+if (rc_user != SQLITE_OK) {
+    cerr << "Cannot open database: " << sqlite3_errmsg(db_users) << endl;
+    sqlite3_close(db_users);
     return 1;
+} else {
+    cout << "Database opened successfully at: users.db" << endl;
 }
-
 
 
 
@@ -660,9 +685,9 @@ if (login_count == 3) {
         cout<<"4. Sell a product"<<endl;
         cout<<"5. Search for a product"<<endl;
         cout<<"6. View all products"<<endl;
-        cout<<"7. View sales infographics (work in progress)"<<endl;            // option 2,3,4 not working                                                                     
+        cout<<"7. View sales infographics (work in progress)"<<endl;                                                                               
         cout<<"8. Exit product manager"<<endl;    
-        cout<<"Enter action to perform:"<<endl;                                   //products not saving on database (critical)
+        cout<<"Enter action to perform:"<<endl;                                  
         cin>>action;
         
 
@@ -681,7 +706,7 @@ if (login_count == 3) {
             saveProducts(db_products, products);
         }
         else if(action == 4){
-            sellProduct(products, current_user_name, total_sales);
+            sellProduct(db_sales, products, current_user_name, total_sales);
             saveProducts(db_products, products);
         }
         else if(action == 5){
@@ -733,7 +758,7 @@ if (login_count == 3) {
         cin>>action;
 
         if(action == 1){
-            sellProduct(products, current_user_name, total_sales);
+            sellProduct(db_sales, products, current_user_name, total_sales);
             saveProducts(db_products, products);
         }
 
