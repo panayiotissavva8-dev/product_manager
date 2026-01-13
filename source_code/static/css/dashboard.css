@@ -1,0 +1,73 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #4a90e2, #50e3c2);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.dashboard-container {
+    background: #fff;
+    margin-top: 50px;
+    padding: 40px 60px;
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    width: 600px;
+    max-width: 95%;
+    text-align: center;
+}
+
+.dashboard-container .logo img {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+.dashboard-container h1 {
+    font-size: 28px;
+    color: #333;
+}
+
+.dashboard-container h2 {
+    font-size: 20px;
+    color: #555;
+    margin-bottom: 30px;
+}
+
+.dashboard-container .actions button {
+    padding: 12px 25px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: #4a90e2;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s all ease;
+}
+
+.dashboard-container .actions button:hover {
+    background-color: #357ABD;
+    transform: translateY(-2px);
+}
+
+.dashboard-container .content p {
+    font-size: 16px;
+    color: #444;
+    margin-top: 30px;
+}
+
+.dashboard-container address {
+    font-style: normal;
+    font-size: 13px;
+    color: #555;
+    margin-top: 25px;
+}
+
+@media (max-width: 650px) {
+    .dashboard-container {
+        padding: 30px 20px;
+        width: 90%;
+    }
+}

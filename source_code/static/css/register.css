@@ -1,0 +1,127 @@
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Full-screen container */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #4a90e2, #50e3c2);
+}
+
+/* Card container */
+.login-container {
+    background: #fff;
+    padding: 40px 60px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    width: 400px;
+    max-width: 90%;
+    text-align: center;
+}
+
+/* Logo */
+.logo img {
+    width: 150px;
+    margin-bottom: 20px;
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="password"],
+select {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 8px 0 20px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+select:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+}
+
+/* Buttons */
+button,
+input[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background-color: #4a90e2;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background-color: #357ABD;
+    transform: translateY(-2px);
+}
+
+/* Secondary button */
+button#backToLogin {
+    background-color: #50e3c2;
+    margin-top: 10px;
+}
+
+button#backToLogin:hover {
+    background-color: #3CB89E;
+}
+
+/* Links */
+a {
+    color: #4a90e2;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Form labels */
+label {
+    font-weight: 600;
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+}
+
+/* Address / contact info */
+address {
+    font-style: normal;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #555;
+}
+
+/* Responsive tweaks */
+@media (max-width: 500px) {
+    .login-container {
+        padding: 30px 20px;
+        width: 90%;
+    }
+    .logo img {
+        width: 120px;
+    }
+}

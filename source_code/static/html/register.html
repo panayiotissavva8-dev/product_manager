@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prodexa - Register</title>
+    <link rel="stylesheet" href="/css/auth.css">
+    <script type="module" src="/js/register.js"></script>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <img src="/images/Prodexa_logo.png" alt="Prodexa Logo">
+        </div>
+        <h1>Create Account</h1>
+
+        <label for="username">Username</label>
+        <input type="text" id="username" required minlength="4" maxlength="10">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" required minlength="6" maxlength="20">
+
+        <label for="role">Role</label>
+        <select id="role">
+            <option value="manager">Manager</option>
+            <option value="cashier">Cashier</option>
+        </select>
+
+        <input id="registerBtn" type="submit" value="Register">
+
+        <address>
+            Contact us: <a href="mailto:infoProdexa@gmail.com">infoProdexa@gmail.com</a>
+        </address>
+    </div>
+</body>
+</html>

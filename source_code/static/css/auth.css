@@ -1,0 +1,142 @@
+/* Reset and base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #4a90e2, #50e3c2);
+}
+
+/* Main container for login/register */
+.auth-container {
+    background: #fff;
+    padding: 50px 60px;
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    width: 420px;
+    max-width: 90%;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+/* Logo */
+.auth-container .logo img {
+    width: 140px;
+    margin-bottom: 25px;
+}
+
+/* Headings */
+.auth-container h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.auth-container h2 {
+    font-size: 20px;
+    margin-bottom: 25px;
+    color: #555;
+}
+
+/* Labels */
+.auth-container label {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #444;
+}
+
+/* Inputs */
+.auth-container input[type="text"],
+.auth-container input[type="password"],
+.auth-container input[type="email"],
+.auth-container select {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: 0.3s all ease;
+}
+
+.auth-container input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 8px rgba(74, 144, 226, 0.5);
+}
+
+/* Buttons */
+.auth-container button,
+.auth-container input[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    margin-top: 5px;
+    background-color: #4a90e2;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s all ease;
+}
+
+.auth-container button:hover,
+.auth-container input[type="submit"]:hover {
+    background-color: #357ABD;
+    transform: translateY(-2px);
+}
+
+/* Secondary button */
+.auth-container button.secondary {
+    background-color: #50e3c2;
+}
+
+.auth-container button.secondary:hover {
+    background-color: #3CB89E;
+}
+
+/* Links */
+.auth-container a {
+    color: #4a90e2;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.auth-container a:hover {
+    text-decoration: underline;
+}
+
+/* Footer / contact info */
+.auth-container address {
+    font-style: normal;
+    font-size: 13px;
+    color: #555;
+    margin-top: 25px;
+}
+
+/* Responsive tweaks for smaller screens */
+@media (max-width: 500px) {
+    .auth-container {
+        padding: 30px 20px;
+        width: 90%;
+    }
+    .auth-container .logo img {
+        width: 120px;
+    }
+    .auth-container h1 {
+        font-size: 24px;
+    }
+    .auth-container h2 {
+        font-size: 18px;
+    }
+}
