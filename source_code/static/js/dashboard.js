@@ -17,29 +17,33 @@ document.addEventListener("DOMContentLoaded", async () => {
             roleSpan.textContent = data.role;
         } else {
             alert("You are not logged in.");
-            window.location.href = "../html_files/login.html";
+            window.location.href = "/login";
         }
     } catch (err) {
         console.error("Error fetching user data:", err);
         alert("Failed to connect to backend.");
     }
 
-    logoutBtn.addEventListener("click", async () => {
-        try {
-            const response = await fetch("http://localhost:18080/logout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            });
+   logoutBtn.addEventListener("click", async () => {
+    const token = localStorage.getItem("sessionToken");
 
-            const data = await response.json();
-
-            if (data.status === "success") {
-                window.location.href = "source_code/static/login.html";
-            } else {
-                alert("Logout failed");
+    try {
+        const response = await fetch("/logout", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token
             }
-        } catch (err) {
-            console.error("Error during logout:", err);
+        });
+
+        if (response.status === 200) {
+            localStorage.removeItem("sessionToken");
+            window.location.href = "/"; // redirect to login page
+        } else {
+            alert("Logout failed");
         }
-    });
+    } catch (err) {
+        console.error("Error during logout:", err);
+    }
+});
 });

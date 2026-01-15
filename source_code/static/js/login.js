@@ -17,7 +17,7 @@ signBtn.addEventListener("click", async () => {
         const data = await response.json();
         alert(`Welcome ${data.username}! Role: ${data.role}`);
         // Redirect to dashboard or main page
-        window.location.href = "/dashboard.html";
+        window.location.href = "/dashboard";
     } else {
         alert("Invalid credentials");
     }
