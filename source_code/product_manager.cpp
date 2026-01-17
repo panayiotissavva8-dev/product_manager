@@ -15,6 +15,7 @@ std::unordered_map<std::string, std::string> sessions;
 using namespace std;
 
 struct Product {
+    string owner;
     int code;
     string brand;
     string name;
@@ -28,20 +29,21 @@ struct Product {
 // --- DATABASE FUNCTIONS ---
 void loadProducts(sqlite3* db, vector<Product>& products) {
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount FROM products;";
+    const char* sql = "SELECT owner, code, brand, name, quantity, stock_alert, cost, price, discount FROM products;";
     products.clear();
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return;
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         Product p;
-        p.code = sqlite3_column_int(stmt, 0);
-        p.brand = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        p.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        p.quantity = sqlite3_column_int(stmt, 3);
-        p.stock_alert = sqlite3_column_int(stmt, 4);
-        p.cost = sqlite3_column_double(stmt, 5);
-        p.price = sqlite3_column_double(stmt, 6);
-        p.discount = sqlite3_column_double(stmt, 7);
+        p.owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        p.code = sqlite3_column_int(stmt, 1);
+        p.brand = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        p.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        p.quantity = sqlite3_column_int(stmt, 4);
+        p.stock_alert = sqlite3_column_int(stmt, 5);
+        p.cost = sqlite3_column_double(stmt, 6);
+        p.price = sqlite3_column_double(stmt, 7);
+        p.discount = sqlite3_column_double(stmt, 8);
         products.push_back(p);
     }
     sqlite3_finalize(stmt);
@@ -50,18 +52,19 @@ void loadProducts(sqlite3* db, vector<Product>& products) {
 void saveProducts(sqlite3* db, const vector<Product>& products) {
     sqlite3_exec(db, "DELETE FROM products;", nullptr, nullptr, nullptr);
     sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO products (code, brand, name, quantity, stock_alert, cost, price, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+    const char* sql = "INSERT INTO products (owner, code, brand, name, quantity, stock_alert, cost, price, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
     sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
 
     for (const auto& p : products) {
-        sqlite3_bind_int(stmt, 1, p.code);
-        sqlite3_bind_text(stmt, 2, p.brand.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, p.name.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 4, p.quantity);
-        sqlite3_bind_int(stmt, 5, p.stock_alert);
-        sqlite3_bind_double(stmt, 6, p.cost);
-        sqlite3_bind_double(stmt, 7, p.price);
-        sqlite3_bind_double(stmt, 8, p.discount);
+        sqlite3_bind_text(stmt, 1, p.owner.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 2, p.code);
+        sqlite3_bind_text(stmt, 3, p.brand.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, p.name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 5, p.quantity);
+        sqlite3_bind_int(stmt, 6, p.stock_alert);
+        sqlite3_bind_double(stmt, 7, p.cost);
+        sqlite3_bind_double(stmt, 8, p.price);
+        sqlite3_bind_double(stmt, 9, p.discount);
 
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
@@ -78,10 +81,10 @@ bool addProduct(const Product& p, vector<Product>& products, sqlite3* db) {
     return true;
 }
 
-bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sqlite3* db) {
+bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sqlite3* db, const string& username) {
     int code = body["code"].i();
     for (auto& p : products) {
-        if (p.code == code) {
+        if (p.code == code && p.owner == username) {
             p.brand = body["brand"].s();
             p.name = body["name"].s();
             p.quantity = body["quantity"].i();
@@ -96,9 +99,9 @@ bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sq
     return false;
 }
 
-bool deleteProduct(int code, vector<Product>& products, sqlite3* db) {
+bool deleteProduct(int code, vector<Product>& products, sqlite3* db, const string& username) {
     auto it = remove_if(products.begin(), products.end(),
-                        [&](const Product& p){ return p.code == code; });
+     [&](const Product& p){ return p.code == code && p.owner == username; });
     if (it == products.end()) return false;
 
     products.erase(it, products.end());
@@ -135,65 +138,6 @@ int main() {
 
     crow::SimpleApp app;
 
-
-    string static_folder = "static/";
-
-    // --- ROOT LOGIN PAGE ---
-    CROW_ROUTE(app, "/")([](){
-        ifstream file("static/html/login.html", ios::binary);
-        if(!file.is_open()) return crow::response(404, "Cannot open login.html");
-
-        stringstream buffer;
-        buffer << file.rdbuf();
-        crow::response res(buffer.str());
-        res.add_header("Content-Type", "text/html");
-        return res;
-    });
-
-    // --- REGISTER PAGE ---
-    CROW_ROUTE(app, "/register")([](){
-        ifstream file("static/html/register.html", ios::binary);
-        if(!file.is_open()) return crow::response(404, "Cannot open register.html");
-
-        stringstream buffer;
-        buffer << file.rdbuf();
-        crow::response res(buffer.str());
-        res.add_header("Content-Type", "text/html");
-        return res;
-    });
-
-    // --- DASHBOARD PAGE ---
-CROW_ROUTE(app, "/dashboard")([](){
-    ifstream file("static/html/dashboard.html", ios::binary);
-    if(!file.is_open()) return crow::response(404, "dashboard.html not found");
-
-    stringstream buffer;
-    buffer << file.rdbuf();
-    crow::response res(buffer.str());
-    res.add_header("Content-Type", "text/html");
-    return res;
-});
-
-
-
-    // --- STATIC FILES ---
-    app.route_dynamic("/<path>")([&](const crow::request& req, string path){
-        ifstream file(static_folder + path, ios::binary);
-        if(!file.is_open()) return crow::response(404, "File not found: " + path);
-
-        stringstream buffer;
-        buffer << file.rdbuf();
-        crow::response res(buffer.str());
-
-        if (path.size() >= 4 && path.substr(path.size()-4) == ".css") res.add_header("Content-Type", "text/css");
-        else if (path.size() >= 3 && path.substr(path.size()-3) == ".js") res.add_header("Content-Type", "application/javascript");
-        else if (path.size() >= 4 && path.substr(path.size()-4) == ".png") res.add_header("Content-Type", "image/png");
-        else if (path.size() >= 4 && (path.substr(path.size()-4) == ".jpg" || path.substr(path.size()-5) == ".jpeg")) res.add_header("Content-Type", "image/jpeg");
-        else if (path.size() >= 5 && path.substr(path.size()-5) == ".html") res.add_header("Content-Type", "text/html");
-        else res.add_header("Content-Type", "application/octet-stream");
-
-        return res;
-    });
 
     // --- LOGIN API ---
     CROW_ROUTE(app, "/login").methods(crow::HTTPMethod::POST)([&db_users](const crow::request& req){
@@ -302,17 +246,23 @@ CROW_ROUTE(app, "/current_user")([&db_users](const crow::request& req){
 
 
 
-
-    // --- PRODUCTS API ---
-   CROW_ROUTE(app, "/products")
-([&products, &db_products]() {
+  // --- PRODUCTS DATA API ---
+CROW_ROUTE(app, "/api/products")
+([&products, &db_products](const crow::request& req){
     loadProducts(db_products, products);
+    auto token = req.get_header_value("Authorization");
+if (token.empty() || sessions.find(token) == sessions.end())
+    return crow::response(401, "Not logged in");
+
+string username = sessions[token];
+
 
     crow::json::wvalue out;
     out["products"] = crow::json::wvalue::list();
 
     int i = 0;
     for (const auto& p : products) {
+        if (p.owner != username) continue; // only return products of the logged-in user
         crow::json::wvalue obj;
         obj["code"] = p.code;
         obj["brand"] = p.brand;
@@ -322,19 +272,171 @@ CROW_ROUTE(app, "/current_user")([&db_users](const crow::request& req){
         obj["cost"] = p.cost;
         obj["price"] = p.price;
         obj["discount"] = p.discount;
-
         out["products"][i++] = std::move(obj);
     }
 
-    return crow::response(out);
+    return crow::response(200, out);
 });
+
+    // --- GET PRODUCT API ---
+CROW_ROUTE(app, "/get_product")
+([&products, &db_products](const crow::request& req){
+    auto query_param = req.url_params.get("query");
+    if (!query_param) return crow::response(400, "Missing query");
+
+    string query = query_param;
+    loadProducts(db_products, products); // make sure products vector is up-to-date
+
+    auto token = req.get_header_value("Authorization");
+if (token.empty() || sessions.find(token) == sessions.end())
+    return crow::response(401, "Not logged in");
+
+string username = sessions[token];
+
+
+    for (const auto& p : products) {
+        if (p.owner != username) continue; // only search products of the logged-in user
+        string name_lower = p.name;
+        string query_lower = query;
+        // convert both to lowercase for case-insensitive comparison
+        transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+        transform(query_lower.begin(), query_lower.end(), query_lower.begin(), ::tolower);
+
+        string code_str = to_string(p.code);
+
+        if (name_lower.find(query_lower) != string::npos || code_str.find(query) != string::npos) {
+            crow::json::wvalue res;
+            res["code"] = p.code;
+            res["brand"] = p.brand;
+            res["name"] = p.name;
+            res["quantity"] = p.quantity;
+            res["stock_alert"] = p.stock_alert;
+            res["cost"] = p.cost;
+            res["price"] = p.price;
+            res["discount"] = p.discount;
+            return crow::response(200, res);
+        }
+    }
+
+    return crow::response(404, "Product not found");
+});
+
+
+
+
+   string static_folder = "static/";
+
+    // --- ROOT LOGIN PAGE ---
+    CROW_ROUTE(app, "/")([](){
+        ifstream file("static/html/login.html", ios::binary);
+        if(!file.is_open()) return crow::response(404, "Cannot open login.html");
+
+        stringstream buffer;
+        buffer << file.rdbuf();
+        crow::response res(buffer.str());
+        res.add_header("Content-Type", "text/html");
+        return res;
+    });
+
+    // --- REGISTER PAGE ---
+    CROW_ROUTE(app, "/register")([](){
+        ifstream file("static/html/register.html", ios::binary);
+        if(!file.is_open()) return crow::response(404, "Cannot open register.html");
+
+        stringstream buffer;
+        buffer << file.rdbuf();
+        crow::response res(buffer.str());
+        res.add_header("Content-Type", "text/html");
+        return res;
+    });
+
+    // --- DASHBOARD PAGE ---
+CROW_ROUTE(app, "/dashboard")([](){
+    ifstream file("static/html/dashboard.html", ios::binary);
+    if(!file.is_open()) return crow::response(404, "dashboard.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+// --- PRODUCTS PAGE ---
+CROW_ROUTE(app, "/products")([](){
+    ifstream file("static/html/view_products.html", ios::binary);
+    if (!file.is_open())
+        return crow::response(404, "view_products.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+// --- ADD PRODUCT PAGE ---
+CROW_ROUTE(app, "/add_product")([](){
+    ifstream file("static/html/add_product.html", ios::binary);
+    if (!file.is_open())
+        return crow::response(404, "add_product.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+// --- EDIT PRODUCT PAGE ---
+CROW_ROUTE(app, "/edit_product")([](){
+    ifstream file("static/html/edit_product.html", ios::binary);
+    if (!file.is_open())
+        return crow::response(404, "edit_product.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+
+
+
+    // --- STATIC FILES ---
+    app.route_dynamic("/<path>")([&](const crow::request& req, string path){
+        ifstream file(static_folder + path, ios::binary);
+        if(!file.is_open()) return crow::response(404, "File not found: " + path);
+
+        stringstream buffer;
+        buffer << file.rdbuf();
+        crow::response res(buffer.str());
+
+        if (path.size() >= 4 && path.substr(path.size()-4) == ".css") res.add_header("Content-Type", "text/css");
+        else if (path.size() >= 3 && path.substr(path.size()-3) == ".js") res.add_header("Content-Type", "application/javascript");
+        else if (path.size() >= 4 && path.substr(path.size()-4) == ".png") res.add_header("Content-Type", "image/png");
+        else if (path.size() >= 4 && (path.substr(path.size()-4) == ".jpg" || path.substr(path.size()-5) == ".jpeg")) res.add_header("Content-Type", "image/jpeg");
+        else if (path.size() >= 5 && path.substr(path.size()-5) == ".html") res.add_header("Content-Type", "text/html");
+        else res.add_header("Content-Type", "application/octet-stream");
+
+        return res;
+    });
+
 
 
     CROW_ROUTE(app, "/add_product").methods(crow::HTTPMethod::POST)
     ([&products, &db_products](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
+
+        auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+    string username = sessions[token];
+
         Product p;
+        p.owner = username;
         p.code = body["code"].i();
         p.brand = body["brand"].s();
         p.name = body["name"].s();
@@ -344,32 +446,52 @@ CROW_ROUTE(app, "/current_user")([&db_users](const crow::request& req){
         p.price = body["price"].d();
         p.discount = body["discount"].d();
 
-        if(addProduct(p, products, db_products))
-            return crow::response(200, "Product added");
-        else
-            return crow::response(409, "Product exists");
+     for(auto& prod : products)
+         if(prod.code == p.code && prod.owner == username)
+             return crow::response(409, "Product exists");
+
+         products.push_back(p);
+         saveProducts(db_products, products);
+        
+         return crow::response(200, "Product added");
+        
     });
+
 
     CROW_ROUTE(app, "/update_product").methods(crow::HTTPMethod::POST)
     ([&products, &db_products](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
-        if(updateProduct(body, products, db_products))
+
+        auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+    string username = sessions[token];
+
+        if(updateProduct(body, products, db_products, username) )
             return crow::response(200, "Updated");
         else
             return crow::response(404, "Product not found");
     });
 
+
     CROW_ROUTE(app, "/delete_product").methods(crow::HTTPMethod::POST)
     ([&products, &db_products](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
+
+        auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+    string username = sessions[token];
+
         int code = body["code"].i();
-        if(deleteProduct(code, products, db_products))
+        if(deleteProduct(code, products, db_products, username) )
             return crow::response(200, "Deleted");
         else
             return crow::response(404, "Product not found");
     });
+
 
     // --- RUN SERVER ---
     int port = 18080;
@@ -389,7 +511,7 @@ CROW_ROUTE(app, "/current_user")([&db_users](const crow::request& req){
 
 // --- IGNORE --- 
 
-//  Compilation command:
+//  Compile command:
 
 /* cd source_code
 clang++ product_manager.cpp \

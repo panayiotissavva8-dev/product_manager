@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prodexa - Edit Product</title>
+
+    <link rel="stylesheet" href="/css/edit_product.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script src="/js/edit_product.js" defer></script>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div class="edit-card">
+
+            <button id="backBtn" class="corner-btn left">Back</button>
+        <button id="logoutBtn" class="corner-btn right danger">Logout</button>
+
+        <h1>Edit Product</h1>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search by product code or name">
+            <button id="searchBtn">Search</button>
+        </div>
+
+        <div id="productForm" class="product-form hidden">
+
+            <div class="field">
+                <label>Code</label>
+                <input type="text" id="code" disabled>
+            </div>
+
+            <div class="field editable">
+                <label>Brand</label>
+                <input type="text" id="brand" disabled>
+                <button data-field="brand">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Name</label>
+                <input type="text" id="name" disabled>
+                <button data-field="name">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Quantity</label>
+                <input type="number" id="quantity" disabled>
+                <button data-field="quantity">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Stock Alert</label>
+                <input type="number" id="stock_alert" disabled>
+                <button data-field="stock_alert">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Cost</label>
+                <input type="number" step="0.01" id="cost" disabled>
+                <button data-field="cost">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Price</label>
+                <input type="number" step="0.01" id="price" disabled>
+                <button data-field="price">Edit</button>
+            </div>
+
+             <div class="field editable">
+                <label>Discount</label>
+                <input type="number" step="0.01" id="discount" disabled>
+                <button data-field="discount">Edit</button>
+            </div>
+
+            <button id="saveBtn" class="save-btn">Save Changes</button>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

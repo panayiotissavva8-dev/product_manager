@@ -1,4 +1,4 @@
-/* Reset some default styles */
+/* ===== Reset ===== */
 * {
     margin: 0;
     padding: 0;
@@ -6,122 +6,139 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Full-screen container */
+/* ===== Background ===== */
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #4a90e2, #50e3c2);
 }
 
-/* Card container */
-.login-container {
-    background: #fff;
-    padding: 40px 60px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    width: 400px;
+/* ===== Card Container ===== */
+.auth-container {
+    width: 360px;
     max-width: 90%;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     text-align: center;
 }
 
-/* Logo */
+/* ===== Logo ===== */
 .logo img {
-    width: 150px;
+    width: 100px;
+    margin-bottom: 16px;
+}
+
+/* ===== Title ===== */
+h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #222;
     margin-bottom: 20px;
 }
 
-/* Headings */
-h1, h2, h3, h4 {
-    margin-bottom: 15px;
-    color: #333;
+/* ===== Labels ===== */
+label {
+    display: block;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 6px;
 }
 
-/* Inputs */
+/* ===== Inputs ===== */
 input[type="text"],
 input[type="password"],
 select {
     width: 100%;
-    padding: 12px 15px;
-    margin: 8px 0 20px 0;
-    border: 1px solid #ccc;
+    padding: 10px 12px;
+    font-size: 14px;
     border-radius: 8px;
-    font-size: 16px;
-    transition: all 0.3s ease;
+    border: 1px solid #dcdcdc;
+    margin-bottom: 16px;
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus,
+/* ===== Focus ===== */
+input:focus,
 select:focus {
-    border-color: #4a90e2;
     outline: none;
-    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.25);
 }
 
-/* Buttons */
-button,
+/* ===== Buttons ===== */
 input[type="submit"] {
     width: 100%;
-    padding: 12px;
-    background-color: #4a90e2;
-    color: white;
-    font-size: 16px;
-    border: none;
+    padding: 11px;
+    font-size: 15px;
+    font-weight: 600;
     border-radius: 8px;
+    border: none;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    color: #ffffff;
+    transition: background-color 0.2s ease;
 }
 
-button:hover,
-input[type="submit"]:hover {
-    background-color: #357ABD;
-    transform: translateY(-2px);
+/* Register button */
+#registerBtn {
+    background-color: #4a90e2;
 }
 
-/* Secondary button */
-button#backToLogin {
+#registerBtn:hover {
+    background-color: #3b7fd1;
+}
+
+/* Back to login button */
+#loginBtn {
+    margin-top: 8px;
     background-color: #50e3c2;
-    margin-top: 10px;
 }
 
-button#backToLogin:hover {
-    background-color: #3CB89E;
+#loginBtn:hover {
+    background-color: #3fc6a8;
 }
 
-/* Links */
-a {
+/* ===== Contact ===== */
+address {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #777;
+    font-style: normal;
+}
+
+address a {
     color: #4a90e2;
     text-decoration: none;
 }
 
-a:hover {
+address a:hover {
     text-decoration: underline;
 }
 
-/* Form labels */
-label {
+input[type="button"] {
+    width: 100%;
+    padding: 11px;
+    font-size: 15px;
     font-weight: 600;
-    display: block;
-    text-align: left;
-    margin-bottom: 5px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    transition: background-color 0.2s ease;
 }
 
-/* Address / contact info */
-address {
-    font-style: normal;
-    margin-top: 20px;
-    font-size: 14px;
-    color: #555;
-}
 
-/* Responsive tweaks */
-@media (max-width: 500px) {
-    .login-container {
-        padding: 30px 20px;
-        width: 90%;
+/* ===== Mobile ===== */
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 28px 22px;
     }
+
     .logo img {
-        width: 120px;
+        width: 90px;
     }
 }

@@ -2,48 +2,75 @@ document.addEventListener("DOMContentLoaded", async () => {
     const usernameSpan = document.getElementById("username");
     const roleSpan = document.getElementById("role");
     const logoutBtn = document.getElementById("logoutBtn");
+    const viewProductsBtn = document.getElementById("viewProductsBtn");
+    const viewaddProductBtn = document.getElementById("viewaddProductBtn");
+    const vieweditProductBtn = document.getElementById("vieweditProductBtn");
 
-    try {
-        // Request user info from backend (you need a GET /current_user endpoint)
-        const response = await fetch("http://localhost:18080/current_user", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        });
-
-        const data = await response.json();
-
-        if (data.status === "success") {
-            usernameSpan.textContent = data.username;
-            roleSpan.textContent = data.role;
-        } else {
-            alert("You are not logged in.");
-            window.location.href = "/login";
-        }
-    } catch (err) {
-        console.error("Error fetching user data:", err);
-        alert("Failed to connect to backend.");
+    const token = localStorage.getItem("sessionToken");
+    if (!token) {
+        window.location.href = "/"; // redirect to login if no token
+        return;
     }
 
-   logoutBtn.addEventListener("click", async () => {
-    const token = localStorage.getItem("sessionToken");
-
+    // ✅ Fetch current user with token
     try {
-        const response = await fetch("/logout", {
-            method: "POST",
+        const response = await fetch("http://localhost:18080/current_user", {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": token
             }
         });
 
-        if (response.status === 200) {
+        if (!response.ok) {
             localStorage.removeItem("sessionToken");
-            window.location.href = "/"; // redirect to login page
-        } else {
-            alert("Logout failed");
+            window.location.href = "/"; // session invalid
+            return;
         }
+
+        const data = await response.json();
+
+        usernameSpan.textContent = data.username;
+        roleSpan.textContent = data.role;
+
     } catch (err) {
-        console.error("Error during logout:", err);
+        console.error("Error fetching user data:", err);
+        alert("Failed to connect to backend.");
+        return;
     }
-});
+
+    // ✅ NAVIGATION BUTTONS
+    if (viewProductsBtn) {
+        viewProductsBtn.addEventListener("click", () => window.location.href = "/products");
+    }
+    if (viewaddProductBtn) {
+        viewaddProductBtn.addEventListener("click", () => window.location.href = "/add_product");
+    }
+    if (vieweditProductBtn) {
+        vieweditProductBtn.addEventListener("click", () => window.location.href = "/edit_product");
+    }
+
+    // ✅ LOGOUT
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            try {
+                const response = await fetch("http://localhost:18080/logout", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": token
+                    }
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem("sessionToken");
+                    window.location.href = "/";
+                } else {
+                    alert("Logout failed");
+                }
+            } catch (err) {
+                console.error("Error during logout:", err);
+            }
+        });
+    }
 });
