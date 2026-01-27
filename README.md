@@ -21,7 +21,7 @@ Features:
 What I Learned:
 -How to design stateful systems
 -Using SQLite correctly in C++
--Debugging logic bugs that don’t crash, just lie
+-Debugging logic bugs that don’t crash.
 -Why separation of concerns actually matters
 -Thinking in terms of MVPs instead of “final versions”
 -Preparing C++ code for backend/web adaptation
