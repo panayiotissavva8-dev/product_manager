@@ -1,5 +1,5 @@
-/* ===== Products Table Styles ===== */
-.products-table {
+/* ===== Sales Table Styles ===== */
+.sales-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
@@ -9,38 +9,38 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.4);
 }
 
-.products-table thead {
+.sales-table thead {
     background: #2a2a2a;
 }
 
-.products-table th, .products-table td {
+.sales-table th, .sales-table td {
     padding: 12px 15px;
     text-align: left;
     font-size: 14px;
     color: #ffffff;
 }
 
-.products-table th {
+.sales-table th {
     font-weight: 600;
     opacity: 0.9;
 }
 
-.products-table tbody tr {
+.sales-table tbody tr {
     border-bottom: 1px solid rgba(255,255,255,0.1);
     transition: background 0.2s;
 }
 
-.products-table tbody tr:hover {
+.sales-table tbody tr:hover {
     background: rgba(255,255,255,0.05);
 }
 
 /* Low stock highlight */
-.products-table tbody tr.low-stock td {
+.sales-table tbody tr.low-stock td {
     border-left: 4px solid #ff3b3b;
 }
 
 /* Optional: action buttons (if you add them in future) */
-.product-actions button {
+.sales-actions button {
     padding: 6px 10px;
     border-radius: 6px;
     border: none;
@@ -48,12 +48,12 @@
     font-size: 13px;
 }
 
-.product-actions .edit {
+.sales-actions .edit {
     background: #3b82f6;
     color: white;
 }
 
-.product-actions .delete {
+.sales-actions .delete {
     background: #ef4444;
     color: white;
 }
@@ -86,7 +86,7 @@
     background: #2563eb;
 }
 
-.dashboard-footer {
+.sales-footer {
     text-align: center;
     margin-top: 400px;
     font-size: 13px;

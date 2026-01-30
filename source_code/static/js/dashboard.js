@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const viewProductsBtn = document.getElementById("viewProductsBtn");
     const viewaddProductBtn = document.getElementById("viewaddProductBtn");
     const vieweditProductBtn = document.getElementById("vieweditProductBtn");
+    const viewSalesBtn = document.getElementById("viewSalesBtn");
+    const viewaddSaleBtn = document.getElementById("viewaddSaleBtn");
 
     const token = localStorage.getItem("sessionToken");
     if (!token) {
@@ -48,6 +50,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (vieweditProductBtn) {
         vieweditProductBtn.addEventListener("click", () => window.location.href = "/edit_product");
+    }
+    if(viewSalesBtn){
+        viewSalesBtn.addEventListener("click", () => window.location.href = "/sales");
+    }
+    if(viewaddSaleBtn){
+        viewaddSaleBtn.addEventListener("click", () => window.location.href = "/add_sale");
     }
 
     // ✅ LOGOUT

@@ -2,45 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Prodexa - View Products</title>
+    <title>Sales Page</title>
     <link rel="stylesheet" href="/css/dashboard.css">
-    <link rel="stylesheet" href="/css/view_products.css">
-    <script type="module" src="/js/view_products.js" defer></script>
+    <link rel="stylesheet" href="/css/view_sales.css">
 </head>
 <body>
 
 <div class="dashboard-container">
-  <div class="top-buttons">
+ <div class="top-buttons">
         <button class="back-btn" onclick="window.location.href='/dashboard'">Back</button>
-        <button class="logout-btn" id="logoutBtn" type="submit">Logout</button>
+        <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
     </div>
-   
 
-    <h1 class="dashboard-title">Products</h1>
+    <h1 class="dashboard-title">Sales</h1>
 
-    <!-- Products Table -->
-    <table class="products-table" id="productsTable">
+    <table class="sales-table" id="salesTable">
         <thead>
             <tr>
+                <th>User</th>
                 <th>Code</th>
                 <th>Brand</th>
                 <th>Name</th>
                 <th>Quantity</th>
-                <th>Stock Alert</th>
-                <th>Cost (€)</th>
-                <th>Price (€)</th>
+                <th>Unit Price (€)</th>
                 <th>Discount (%)</th>
+                <th>Total Price (€)</th>
+                <th>Date</th>
             </tr>
         </thead>
         <tbody>
-            <!-- JS will populate rows here -->
+                <!-- JS will populate rows here -->
         </tbody>
     </table>
 
-    <div class="dashboard-footer">
+    <div class="sales-footer">
         &copy; 2026 Northstack Ltd. All rights reserved.
-        
+
     </div>
+    <script src="/js/view_sales.js"></script>
 
 </div>
 

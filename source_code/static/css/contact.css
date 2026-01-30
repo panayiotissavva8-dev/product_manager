@@ -1,0 +1,165 @@
+/* =====================
+   Base Reset
+   ===================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #0b1220;
+    color: #ffffff;
+    line-height: 1.6;
+}
+
+a {
+    color: #5da3ff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* =====================
+   Header
+   ===================== */
+header {
+    text-align: center;
+    padding: 60px 20px 40px;
+}
+
+header h1 {
+    font-size: 2.6rem;
+    font-weight: 600;
+}
+
+/* =====================
+   Main Layout
+   ===================== */
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+}
+
+section {
+    margin-bottom: 48px;
+}
+
+/* =====================
+   Contact Info
+   ===================== */
+.contact-info h2 {
+    font-size: 1.3rem;
+    color: #9aa4bf;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.contact-info p {
+    text-align: center;
+    color: #d1d6e8;
+    margin-bottom: 20px;
+}
+
+.contact-info ul {
+    list-style: none;
+    text-align: center;
+}
+
+.contact-info li {
+    margin-bottom: 8px;
+    color: #d1d6e8;
+}
+
+/* =====================
+   Contact Form
+   ===================== */
+.contact-form h2 {
+    font-size: 1.3rem;
+    color: #9aa4bf;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+form {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #8b94b8;
+}
+
+input,
+textarea {
+    background-color: #111933;
+    border: 1px solid #1f2642;
+    color: #ffffff;
+    padding: 12px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: #5da3ff;
+}
+
+button {
+    background-color: #5da3ff;
+    color: #0b1220;
+    border: none;
+    padding: 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #4a8fe0;
+}
+
+/* =====================
+   Footer
+   ===================== */
+footer {
+    border-top: 1px solid #1f2642;
+    text-align: center;
+    padding: 32px 20px;
+    font-size: 0.85rem;
+    color: #8b94b8;
+}
+
+footer a {
+    margin: 0 10px;
+    color: #8b94b8;
+}
+
+footer a:hover {
+    color: #ffffff;
+}
+
+/* =====================
+   Responsive
+   ===================== */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+
+    input,
+    textarea {
+        font-size: 0.9rem;
+    }
+}

@@ -1,4 +1,4 @@
-.product-form {
+.sale-form {
     background: #1e1e1e;
     padding: 25px;
     border-radius: 12px;
@@ -18,12 +18,12 @@
     color: #fff;
 }
 
-.product-form label {
+.sale-form label {
     font-weight: 500;
     margin-bottom: 4px;
 }
 
-.product-form input {
+.sale-form input {
     padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.2);
@@ -32,7 +32,7 @@
     font-size: 14px;
 }
 
-.product-form input:focus {
+.sale-form input:focus {
     outline: 2px solid #6c7bff;
 }
 
@@ -87,7 +87,7 @@
 }
 
 /* Base number input style  */
-.product-form input[type=number] {
+.sale-form input[type=number] {
     padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.2);
@@ -99,8 +99,8 @@
 }
 
 /* Chrome, Safari, Edge, Opera */
-.product-form input[type=number]::-webkit-inner-spin-button,
-.product-form input[type=number]::-webkit-outer-spin-button {
+.sale-form input[type=number]::-webkit-inner-spin-button,
+.sale-form input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
     width: 18px;
@@ -112,17 +112,17 @@
 }
 
 /* Optional: add hover effect */
-.product-form input[type=number]::-webkit-inner-spin-button:hover,
-.product-form input[type=number]::-webkit-outer-spin-button:hover {
+.sale-form input[type=number]::-webkit-inner-spin-button:hover,
+.sale-form input[type=number]::-webkit-outer-spin-button:hover {
     background-color: #f3f3f3;
 }
 
 /* Add custom arrow symbols using pseudo-elements for Firefox */
-.product-form input[type=number] {
+.sale-form input[type=number] {
     position: relative;
 }
 
-.product-form input[type=number]::-moz-number-spin-box {
+.sale-form input[type=number]::-moz-number-spin-box {
     background-color: #ffffff; /* Firefox white background for spinner */
     border-radius: 4px;
 }

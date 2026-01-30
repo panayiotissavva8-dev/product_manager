@@ -142,3 +142,35 @@ input[type="button"] {
         width: 90px;
     }
 }
+
+
+.terms-check {
+    margin-top: 18px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.terms-check label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.terms-check input {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+}
+
+.terms-check a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.terms-check a:hover {
+    text-decoration: underline;
+}
+
+

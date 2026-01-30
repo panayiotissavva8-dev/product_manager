@@ -1,7 +1,15 @@
+document.addEventListener("DOMContentLoaded", () => {
 const registerBtn = document.getElementById("registerBtn");
 const loginBtn = document.getElementById("loginBtn");
+const termsCheckbox = document.getElementById("termsCheckbox");
 
-registerBtn.addEventListener("click", async () => {
+registerBtn.addEventListener("click", async (e) => {
+     if (!termsCheckbox.checked) {
+        e.preventDefault();
+        alert("You must agree to the Terms and Conditions to register.");
+        return;
+    }
+
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     const role = document.getElementById("role").value;
@@ -12,7 +20,7 @@ registerBtn.addEventListener("click", async () => {
         const response = await fetch("http://localhost:18080/add_user", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password, role })
+            body: JSON.stringify({ username, password, role, termsAccepted: true}),
         });
 
         if (response.ok) {
@@ -29,5 +37,6 @@ registerBtn.addEventListener("click", async () => {
 });
 
 loginBtn.addEventListener("click", () => {
-    window.location.href = "/";
+    window.location.href = "/login";
+});
 });

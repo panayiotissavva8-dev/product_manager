@@ -1,5 +1,6 @@
 const logoutBtn = document.getElementById("logoutBtn");
-const addProductForm = document.getElementById("addProductForm");
+const addSaleForm = document.getElementById("addSaleForm");
+
 
 // --- Logout ---
 logoutBtn.addEventListener("click", async () => {
@@ -27,8 +28,8 @@ logoutBtn.addEventListener("click", async () => {
     }
 });
 
-// --- Add product form submit ---
-addProductForm.addEventListener("submit", async (e) => {
+// --- Add sale form submit ---
+addSaleForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const token = localStorage.getItem("sessionToken");
@@ -37,41 +38,37 @@ addProductForm.addEventListener("submit", async (e) => {
         return;
     }
 
-    const productData = {
+    const saleData = {
         code: parseInt(document.getElementById("code").value),
         brand: document.getElementById("brand").value,
         name: document.getElementById("name").value,
         quantity: parseInt(document.getElementById("quantity").value),
-        stock_alert: parseInt(document.getElementById("stock_alert").value),
-        cost: parseFloat(document.getElementById("cost").value),
         price: parseFloat(document.getElementById("price").value),
         discount: parseFloat(document.getElementById("discount").value)
     };
 
     try {
-        const res = await fetch("/add_product", {
+        const res = await fetch("/add_sale", {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",
-                "Authorization": token   
+                "Authorization": token  
             },
-            body: JSON.stringify(productData)
+            body: JSON.stringify(saleData)
         });
 
         if (res.ok) {
-            alert("Product added successfully!");
-            addProductForm.reset();
-        } else if (res.status === 409) {
-            alert("Product with this code already exists!");
+            alert("Sale added successfully!");
+            addSaleForm.reset();
         } else if (res.status === 401) {
             alert("Session expired. Please log in again.");
             localStorage.removeItem("sessionToken");
             window.location.href = "/";
         } else {
-            alert("Failed to add product");
+            alert("Failed to add Sale");
         }
     } catch (err) {
-        console.error("Add product error:", err);
-        alert("Error adding product");
+        console.error("Add sale error:", err);
+        alert("Error adding sale");
     }
 });

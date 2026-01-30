@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">   
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Northstack</title>
+    <link rel="stylesheet" href="/css/contact.css">
+</head>
+<body>
+    <header>
+        <h1>Contact Northstack</h1>
+    </header>
+    <main>
+        <section class="contact-info">
+            <h2>Get in Touch</h2>
+            <p>If you have any questions, feedback, or inquiries, feel free to reach out to us!</p>
+            <ul>
+                <li>Email: <a href="mailto:contact@northstack.com">contact@northstack.com</a></li>
+                <li>Phone: +1 (555) 123-4567</li>
+                <li>Address: 123 Northstack Ave, Tech City, TC 12345</li>
+            </ul>
+        </section>
+        <section class="contact-form">
+            <h2>Contact Form</h2>
+            <form action="/submit_contact" method="POST">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+                <label for="message">Message:</label>
+                <textarea id="message" name="message" rows="5" required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>© 2026 Northstack Ltd. All rights reserved.</p>
+        <a href="/html/privacy.html" target="_blank">Privacy Policy</a>
+        <a href="/html/terms_service.html" target="_blank">Terms of Service</a>
+        <a href="/html/contact.html" target="_blank">Contact Us</a>
+    </footer>
+</body>
+</html>
