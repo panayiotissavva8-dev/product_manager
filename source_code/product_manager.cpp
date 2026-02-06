@@ -51,6 +51,13 @@ struct SalesReport {
     double monthly_profit;
 };
 
+struct UsersData {
+    string owner;
+    string username;
+    string role;
+};
+
+
 // --- UTILITY FUNCTIONS ---
 // Get current date and time
 std::string getCurrentDateTime() {
@@ -274,6 +281,28 @@ void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& use
     sqlite3_finalize(stmt);
 }
 
+void loadUsers(sqlite3* db, vector<UsersData>& Users, const string& username){
+    sqlite3_stmt* stmt;
+    const char* sql = "SELECT username, role WHERE LOWER(owner) = LOWER(?);";
+
+    if(sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK){
+        std::cerr<<"Failed to prepare loadUsers stmt; " << sqlite3_errmsg(db) << std::endl;
+        return;
+    }
+
+   sqlite3_bind_text(stmt, 1, username.c_str(), -1,SQLITE_TRANSIENT);
+
+   if(sqlite3_step(stmt) == SQLITE_ROW){
+    UsersData u;
+    u.owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+    u.username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+    u.role = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+    Users.push_back(u);
+   }
+
+   sqlite3_finalize(stmt);
+}
+
 
 
 
@@ -355,8 +384,9 @@ int main() {
 CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_users](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
-
+        
         string username = body["username"].s();
+        string owner  = username;
         string password = body["password"].s();
         string role = body["role"].s();
         bool termsAccepted = body["termsAccepted"].b();
@@ -367,15 +397,16 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_users](const c
             return crow::response(400, "Terms must be accepted");
         }
         sqlite3_stmt* stmt;
-        const char* sql = "INSERT INTO users (username, password_hash, role, termsAccepted, terms_accepted_at) VALUES (?, ?, ?, ?, ?);";
+        const char* sql = "INSERT INTO users (owner, username, password_hash, role, termsAccepted, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?);";
         if (sqlite3_prepare_v2(db_users, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return crow::response(500);
 
-        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, hashed.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, role.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 4, termsAccepted ? 1 : 0);
-        sqlite3_bind_int64(stmt, 5, static_cast<sqlite3_int64>(terms_accepted_at));
+        sqlite3_bind_text(stmt, 1, owner.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, hashed.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, role.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 5, termsAccepted ? 1 : 0);
+        sqlite3_bind_int64(stmt, 6, static_cast<sqlite3_int64>(terms_accepted_at));
 
         if (sqlite3_step(stmt) != SQLITE_DONE) return crow::response(409, "User exists");
 
@@ -586,6 +617,31 @@ cout << "Reports generated: " << reports.size() << endl;
     return crow::response(200, out);
 });
 
+CROW_ROUTE(app, "/api/users")
+([&db_users](const crow::request& req){
+    auto token = req.get_header_value("Authorization");
+if(token.empty() || sessions.find(token) == sessions.end())
+   return crow::response(401,"Not logged in");
+
+   string username = sessions[token];
+
+   vector<UsersData> Users;
+   loadUsers(db_users, Users, username);
+
+   crow::json::wvalue out;
+   out["Users"] = crow::json::wvalue::list();
+
+   int i = 0;
+   for(const auto& u : Users){
+    crow::json::wvalue obj;
+    obj["username"] = u.username;
+    obj["role"] = u.role;
+   }
+
+   return crow::response(200, out);
+
+});
+
 
 
    string static_folder = "static/";
@@ -712,6 +768,20 @@ CROW_ROUTE(app, "/sales_report")([](){
     ifstream file("static/html/sales_report.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "sales_report.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
+// --- USERS PAGE --- 
+CROW_ROUTE(app, "/view_users")([](){
+    ifstream file("static/html/view_users.html", ios::binary);
+    if(!file.is_open())
+    return crow::response(404,"view_users.html not found");
 
     stringstream buffer;
     buffer << file.rdbuf();
@@ -851,7 +921,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
             p.quantity -= s.quantity;
             if(p.quantity < 0) {
                 p.quantity = p.quantity + s.quantity; // revert stock change
-                return crow::response(500, "Insufficient stock");
+                return crow::response(422, "Insufficient stock");
                 break;
             }
             if(p.quantity < p.stock_alert) {

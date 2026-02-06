@@ -34,6 +34,31 @@ async function loadSales() {
             return;
         }
 
+        logoutBtn.addEventListener("click", async () => {
+    const token = localStorage.getItem("sessionToken");
+
+    if (!token) {
+        window.location.href = "/";
+        return;
+    }
+
+    try {
+        const res = await fetch("/logout", {
+            method: "POST",
+            headers: { "Authorization": token }
+        });
+
+        if (res.ok) {
+            localStorage.removeItem("sessionToken");
+            window.location.href = "/";
+        } else {
+            console.error("Logout failed on server");
+        }
+    } catch (err) {
+        console.error("Logout error:", err);
+    }
+});
+
         const data = await res.json();
         console.log("API data:", data); // debug
 

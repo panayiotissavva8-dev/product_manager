@@ -2,54 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Prodexa - Add Product</title>
+    <title>Prodexa - Edit Product</title>
+
+    <link rel="stylesheet" href="/css/edit_product.css">
     <link rel="stylesheet" href="/css/dashboard.css">
-    <link rel="stylesheet" href="/css/add_sale.css">
-    <script type="module" src="/js/add_sale.js" defer></script>
+    <script src="/js/add_sale.js" defer></script>
 </head>
 <body>
 
-<div class="dashboard-container">
+<div class="page-wrapper">
+    <div class="edit-card">
 
-    <!-- Top buttons: Back left, Logout right -->
-    <div class="top-buttons">
-        <button class="back-btn" onclick="window.location.href='/dashboard'">Back</button>
-        <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
-    </div>
+            <button id="backBtn" class="corner-btn left">Back</button>
+        <button id="logoutBtn" class="corner-btn right danger">Logout</button>
 
-    <h1 class="dashboard-title">Add Sale</h1>
+        <h1>Add Sale</h1>
 
-    <!-- Form -->
-    <form id="addSaleForm" class="sale-form">
-        <label for="code">Code</label>
-        <input type="number" id="code" name="code" required>
-
-        <label for="brand">Brand</label>
-        <input type="text" id="brand" name="brand" required>
-
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required>
-
-        <label for="quantity">Quantity</label>
-        <input type="number" id="quantity" name="quantity" required>
-
-        <label for="price">Price (€)</label>
-        <input type="number" step="0.01" id="price" name="price" required>
-
-        <label for="discount">Discount (%)</label>
-        <input type="number" step="0.01" id="discount" name="discount" required>
-
-        <label for="cost">Cost (€)</label>
-        <input type="number" step="0.01" id="cost" name="cost" required>
-
-        <button type="submit" class="submit-btn">Add Sale</button>
-    </form>
-
-     <!---Footer--->
-        <div class="footer">
-            &copy; 2026 Northstack Ltd. All rights reserved.
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search by product code or name">
+            <button id="searchBtn">Search</button>
         </div>
 
+        <div id="productForm" class="product-form hidden">
+
+            <div class="field">
+                <label>Code</label>
+                <input type="text" id="code" disabled>
+            </div>
+
+            <div class="field editable">
+                <label>Brand</label>
+                <input type="text" id="brand" disabled>
+                <button data-field="brand">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Name</label>
+                <input type="text" id="name" disabled>
+                <button data-field="name">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Quantity</label>
+                <input type="number" id="quantity" disabled>
+                <button data-field="quantity">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Cost</label>
+                <input type="number" step="0.01" id="cost" disabled>
+                <button data-field="cost">Edit</button>
+            </div>
+
+            <div class="field editable">
+                <label>Price</label>
+                <input type="number" step="0.01" id="price" disabled>
+                <button data-field="price">Edit</button>
+            </div>
+
+             <div class="field editable">
+                <label>Discount</label>
+                <input type="number" step="0.01" id="discount" disabled>
+                <button data-field="discount">Edit</button>
+            </div>
+
+            <button id="saveBtn" class="save-btn">Add Sale</button>
+
+            <div>
+                 <!---Footer--->
+        <div class="dashboard-footer">
+            &copy; 2026 Northstack Ltd. All rights reserved.
+        </div>
+            </div>
+
+             
 </div>
 
 </body>

@@ -7,6 +7,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const vieweditProductBtn = document.getElementById("vieweditProductBtn");
     const viewSalesBtn = document.getElementById("viewSalesBtn");
     const viewaddSaleBtn = document.getElementById("viewaddSaleBtn");
+    const viewSalesReportBtn = document.getElementById("viewSalesReportBtn");
+    const viewUsersBtn = document.getElementById("viewUsersBtn");
 
     const token = localStorage.getItem("sessionToken");
     if (!token) {
@@ -14,9 +16,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // ✅ Fetch current user with token
+    //  Fetch current user with token
     try {
-        const response = await fetch("http://localhost:18080/current_user", {
+        const response = await fetch("/current_user", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -41,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // ✅ NAVIGATION BUTTONS
+    //  NAVIGATION BUTTONS
     if (viewProductsBtn) {
         viewProductsBtn.addEventListener("click", () => window.location.href = "/products");
     }
@@ -60,8 +62,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(viewSalesReportBtn){
         viewSalesReportBtn.addEventListener("click", () => window.location.href = "/sales_report");
     }
+    if(viewUsersBtn){
+        viewUsersBtn.addEventListener("click", () =>  window.location.href = "/view_users");
+    }
 
-    // ✅ LOGOUT
+    //  LOGOUT
     if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {
             try {
