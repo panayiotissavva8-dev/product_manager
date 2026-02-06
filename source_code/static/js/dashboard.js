@@ -57,6 +57,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(viewaddSaleBtn){
         viewaddSaleBtn.addEventListener("click", () => window.location.href = "/add_sale");
     }
+    if(viewSalesReportBtn){
+        viewSalesReportBtn.addEventListener("click", () => window.location.href = "/sales_report");
+    }
 
     // ✅ LOGOUT
     if (logoutBtn) {

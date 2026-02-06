@@ -1,5 +1,9 @@
-async function loadSales() {
-    console.log("view_sales.js loaded");
+async function salesReportGen() {
+
+    const month = document.getElementById("month").value;
+    const year = document.getElementById("year").value;
+
+    console.log("sales_report.js loaded");
     const token = localStorage.getItem("sessionToken");
     if (!token) {
         window.location.href = "/";
@@ -18,10 +22,12 @@ async function loadSales() {
         return;
     }
 
-    try {
-        const res = await fetch("/api/sales", {
+    const res = await fetch(
+        `/api/sales_report?month=${month}&year=${year}`,
+        {
             headers: { "Authorization": token }
-        });
+        }
+    );
 
         if (!res.ok) {
             if (res.status === 401) {
@@ -37,7 +43,7 @@ async function loadSales() {
         const data = await res.json();
         console.log("API data:", data); // debug
 
-        const sales = data.sales || [];
+        const sales = data.reports || [];
 
         // Clear previous rows
         salesTableBody.innerHTML = "";
@@ -52,28 +58,27 @@ async function loadSales() {
         sales.forEach(p => {
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${p.user}</td>
-                <td>${p.code}</td>
-                <td>${p.brand}</td>
-                <td>${p.name}</td>
-                <td>${p.quantity}</td>
-                <td>€${Number(p.price).toFixed(2)}</td>
-                <td>${p.discount}%</td>
-                <td>€${Number(p.price_discount).toFixed(2)}</td>
-                <td>€${Number(p.total_price).toFixed(2)}</td>
-                <td>${new Date(p.date).toLocaleString()}</td>
-            `;
+               <td>${p.month}</td>
+               <td>${p.monthly_sales}</td>
+                <td>${p.monthly_units}</td>
+               <td>${p.monthly_revenue.toFixed(2)}</td>
+               <td>${p.monthly_cost.toFixed(2)}</td>
+               <td>${p.monthly_profit.toFixed(2)}</td>`;
             salesTableBody.appendChild(row);
         });
-
-    } catch (err) {
-        console.error("Failed to load sales", err);
-        alert("Error connecting to backend");
-    }
 }
 
-// Call loadSales when the page is loaded
+
+// Call salesReportGen when the page is loaded
+
 window.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM loaded, calling loadSales"); 
-    loadSales();
+    console.log("DOM loaded, calling salesReportGen"); 
+    salesReportGen();
+
+    // Add event listeners to month and year dropdowns
+   
+   const btn = document.getElementById("viewSalesBtn");
+    btn.addEventListener("click", () => {
+        salesReportGen(); // fetch updated report
+    });
 });

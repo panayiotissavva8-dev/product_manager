@@ -1,0 +1,173 @@
+/* ===== Products Table Styles ===== */
+.sales-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #1e1e1e; /* same dark background as cards */
+    border-radius: 12px;
+    overflow: hidden; /* for rounded corners */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+.sales-table thead {
+    background: #2a2a2a;
+}
+
+.sales-table th, .sales-table td {
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.sales-table th {
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.sales-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    transition: background 0.2s;
+}
+
+.sales-table tbody tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.sales-actions button {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.sales-actions .edit {
+    background: #3b82f6;
+    color: white;
+}
+
+.sales-actions .delete {
+    background: #ef4444;
+    color: white;
+}
+
+.top-buttons {
+    display: flex;
+    width: 100%;
+    justify-content: space-between; 
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+
+
+.back-btn, .logout-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    background: #3b82f6;
+    color: white;
+    transition: background 0.2s;
+}
+
+.back-btn:hover, .logout-btn:hover {
+    background: #2563eb;
+}
+
+.dashboard-footer {
+    text-align: center;
+    margin-top: 400px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+
+
+
+/* ===== Sales Report Container ===== */
+.sales-container {
+    background: #1e1e1e;
+    border-radius: 18px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    padding: 30px 50px 30px;
+    margin-top: 10px;
+    margin-bottom: 50px;
+}
+
+/* ===== Title Area ===== */
+.sales-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.sales-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.sales-header h2 {
+    font-size: 14px;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* ===== Search Bar Area ===== */
+.sales-search {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.sales-search input[type="search"] {
+    background: #121212;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 260px;
+}
+
+.sales-search input[type="search"]::placeholder {
+    color: rgba(255,255,255,0.45);
+}
+
+.sales-search input[type="search"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* Optional search button if you use one */
+.sales-search button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    background: #3b82f6;
+    color: white;
+    transition: background 0.2s;
+}
+
+.sales-search button:hover {
+    background: #2563eb;
+}
+
+/* ===== Table Spacing Adjustment ===== */
+.sales-table {
+    margin-top: 0;
+}
+
+

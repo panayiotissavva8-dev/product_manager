@@ -25,6 +25,7 @@ struct Product {
     double cost;
     double price;
     double discount;
+    double price_dicount;
 };
 
 struct sale {
@@ -36,7 +37,18 @@ struct sale {
     double price;
     double discount;
     double total_price;
+    double cost;
+    double total_cost;
     string date;
+};
+
+struct SalesReport {
+    string month;
+    int monthly_sales;
+    int monthly_units;
+    double monthly_revenue;
+    double monthly_cost;
+    double monthly_profit;
 };
 
 // --- UTILITY FUNCTIONS ---
@@ -55,7 +67,7 @@ std::string getCurrentDateTime() {
 // --- DATABASE FUNCTIONS ---
 void loadProducts(sqlite3* db, vector<Product>& products, const string& username) {
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount FROM products WHERE owner = ?;";
+    const char* sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount, price_discount FROM products WHERE owner = ?;";
     products.clear();
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return;
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
@@ -71,6 +83,7 @@ void loadProducts(sqlite3* db, vector<Product>& products, const string& username
         p.cost = sqlite3_column_double(stmt, 5);
         p.price = sqlite3_column_double(stmt, 6);
         p.discount = sqlite3_column_double(stmt, 7);
+        p.price_dicount = sqlite3_column_double(stmt, 8);
         products.push_back(p);
     }
     sqlite3_finalize(stmt);
@@ -79,7 +92,7 @@ void loadProducts(sqlite3* db, vector<Product>& products, const string& username
 void saveProducts(sqlite3* db, const vector<Product>& products) {
     sqlite3_exec(db, "DELETE FROM products;", nullptr, nullptr, nullptr);
     sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO products (owner, code, brand, name, quantity, stock_alert, cost, price, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    const char* sql = "INSERT INTO products (owner, code, brand, name, quantity, stock_alert, cost, price, discount, price_discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
 
     for (const auto& p : products) {
@@ -92,6 +105,7 @@ void saveProducts(sqlite3* db, const vector<Product>& products) {
         sqlite3_bind_double(stmt, 7, p.cost);
         sqlite3_bind_double(stmt, 8, p.price);
         sqlite3_bind_double(stmt, 9, p.discount);
+        sqlite3_bind_double(stmt, 10, p.price_dicount);
 
         sqlite3_step(stmt);
         sqlite3_reset(stmt);
@@ -146,11 +160,12 @@ string hashPassword(const std::string& password) {
     return ss.str();
 }
 
+
 void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
     sales.clear();
     sqlite3_stmt* stmt;
     // Case-insensitive username match
-    const char* sql = "SELECT code, brand, name, quantity, price, discount, total_price, date "
+    const char* sql = "SELECT code, brand, name, quantity, price, discount, total_price, cost, total_cost, date "
                   "FROM sales WHERE LOWER(owner) = LOWER(?);";
 
     
@@ -176,7 +191,10 @@ void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
         s.price = sqlite3_column_double(stmt, 4);
         s.discount = sqlite3_column_double(stmt, 5);
         s.total_price = sqlite3_column_double(stmt, 6);
-        const unsigned char* date_text = sqlite3_column_text(stmt, 7);
+        s.cost = sqlite3_column_double(stmt, 7);
+        s.total_cost = sqlite3_column_double(stmt, 8);
+        const unsigned char* date_text = sqlite3_column_text(stmt, 9);
+        
         s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
         sales.push_back(s);
     }
@@ -189,8 +207,8 @@ void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
 
 void saveSales(sqlite3* db, const vector<sale>& sales) {
     sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO sales (owner, code, brand, name, quantity, price, discount, total_price, date) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    const char* sql = "INSERT INTO sales (owner, code, brand, name, quantity, price, discount, total_price, cost, total_cost, date) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         std::cerr << "Failed to prepare saveSales stmt: " << sqlite3_errmsg(db) << std::endl;
@@ -206,11 +224,12 @@ void saveSales(sqlite3* db, const vector<sale>& sales) {
         sqlite3_bind_double(stmt, 6, s.price);
         sqlite3_bind_double(stmt, 7, s.discount);
         sqlite3_bind_double(stmt, 8, s.total_price);
+        sqlite3_bind_double(stmt, 9, s.cost);
+        sqlite3_bind_double(stmt, 10, s.total_cost);
 
         // Use the date from the object; fallback to now if empty
         std::string date_to_save = s.date.empty() ? getCurrentDateTime() : s.date;
-        sqlite3_bind_text(stmt, 9, date_to_save.c_str(), -1, SQLITE_TRANSIENT);
-
+        sqlite3_bind_text(stmt, 11, date_to_save.c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt) != SQLITE_DONE) {
             std::cerr << "Insert failed: " << sqlite3_errmsg(db) << std::endl;
         }
@@ -221,6 +240,40 @@ void saveSales(sqlite3* db, const vector<sale>& sales) {
 
     sqlite3_finalize(stmt);
 }
+
+void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& username, int month, int year) {
+    sqlite3_stmt* stmt;
+    const char* sql = "SELECT COUNT(code) AS total_sales, SUM(quantity) AS total_units, SUM(total_price) AS total_revenue, COUNT(*) AS sale_count, SUM(total_cost) AS total_cost FROM sales "
+                      "WHERE LOWER(owner) = LOWER(?) AND strftime('%m', date) = ? AND strftime('%Y', date) = ?;";
+    
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr <<" Failed to prepare SalesReport stmt: " << sqlite3_errmsg(db) << std::endl;
+        return;
+    }
+
+    std::ostringstream mm;
+    mm << std::setw(2) << std::setfill('0') << month; 
+    
+    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, mm.str().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, std::to_string(year).c_str(), -1, SQLITE_TRANSIENT);
+    
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+    SalesReport r;
+    r.monthly_sales = sqlite3_column_int(stmt, 0);
+    r.monthly_units = sqlite3_column_int(stmt, 1);
+    r.monthly_revenue = sqlite3_column_double(stmt, 2);
+    r.monthly_cost = sqlite3_column_double(stmt, 4);
+    r.monthly_profit = r.monthly_revenue - r.monthly_cost;
+    r.month = std::to_string(month) + "/" + std::to_string(year);
+    reports.push_back(r);
+    }
+
+
+    sqlite3_finalize(stmt);
+}
+
 
 
 
@@ -401,6 +454,7 @@ loadProducts(db_products, products, username);
         obj["cost"] = p.cost;
         obj["price"] = p.price;
         obj["discount"] = p.discount;
+        obj["price_discount"] = p.price - (p.price * p.discount / 100.0);
         out["products"][i++] = std::move(obj);
     }
 
@@ -484,7 +538,8 @@ cout << "SESSION USERNAME = [" << username << "]" << endl;
         obj["quantity"] = s.quantity;
         obj["price"] = s.price;
         obj["discount"] = s.discount;
-        obj["total_price"] = s.total_price;
+        obj["price_discount"] = s.price - (s.price * s.discount / 100.0);
+        obj["total_price"] = s.total_price - (s.total_price * s.discount / 100.0);
         obj["date"] = s.date;
         out["sales"][i++] = std::move(obj);
     }
@@ -492,8 +547,44 @@ cout << "SESSION USERNAME = [" << username << "]" << endl;
     return crow::response(200, out);
 });
 
+CROW_ROUTE(app, "/api/sales_report")
+([&db_sales](const crow::request& req){
+    auto token = req.get_header_value("Authorization");
+if (token.empty() || sessions.find(token) == sessions.end())
+    return crow::response(401, "Not logged in");
 
+     auto monthStr = req.url_params.get("month");
+    auto yearStr  = req.url_params.get("year");
 
+    if (!monthStr || !yearStr)
+        return crow::response(400, "Missing month or year");
+
+    int month = std::stoi(monthStr);
+    int year  = std::stoi(yearStr);
+
+string username = sessions[token];
+transform(username.begin(), username.end(), username.begin(), ::tolower);
+
+vector<SalesReport> reports;
+ salesReportGen(db_sales, reports, username, month, year);
+cout << "Reports generated: " << reports.size() << endl;
+    crow::json::wvalue out;
+    out["reports"] = crow::json::wvalue::list();
+
+    int i = 0;
+    for (const auto& r : reports) {
+        crow::json::wvalue obj;
+        obj["month"] = r.month;
+        obj["monthly_sales"] = r.monthly_sales;
+        obj["monthly_units"] = r.monthly_units;
+        obj["monthly_revenue"] = r.monthly_revenue;
+        obj["monthly_cost"] = r.monthly_cost;
+        obj["monthly_profit"] = r.monthly_profit;
+        out["reports"][i++] = std::move(obj);
+    }
+
+    return crow::response(200, out);
+});
 
 
 
@@ -616,6 +707,20 @@ CROW_ROUTE(app, "/add_sale")([](){
     return res;
 });
 
+// --- SALES REPORT PAGE ---
+CROW_ROUTE(app, "/sales_report")([](){
+    ifstream file("static/html/sales_report.html", ios::binary);
+    if (!file.is_open())
+        return crow::response(404, "sales_report.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
 
 
     // --- STATIC FILES ---
@@ -709,7 +814,7 @@ CROW_ROUTE(app, "/add_sale")([](){
 
 
    CROW_ROUTE(app, "/add_sale").methods(crow::HTTPMethod::POST)
-   ([&db_sales](const crow::request& req) {
+   ([&db_sales,&db_products,&products](const crow::request& req) {
 
     auto body = crow::json::load(req.body);
     if (!body) return crow::response(400);
@@ -732,13 +837,37 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
     s.price = body["price"].d();
     s.discount = body["discount"].d();
     s.total_price = s.price * s.quantity;
+    s.cost = body["cost"].d();
+    s.total_cost = s.cost * s.quantity;
     s.date = getCurrentDateTime();
 
     // Local vector just for this request
     vector<sale> sales{s};
-    saveSales(db_sales, sales);
 
-    return crow::response(200, "Sale added");
+    // Update product stock
+    loadProducts(db_products, products, username);
+    for (auto& p : products) {
+        if (p.code == s.code && p.owner == username) {
+            p.quantity -= s.quantity;
+            if(p.quantity < 0) {
+                p.quantity = p.quantity + s.quantity; // revert stock change
+                return crow::response(500, "Insufficient stock");
+                break;
+            }
+            if(p.quantity < p.stock_alert) {
+                saveProducts(db_products, products);
+                saveSales(db_sales, sales);
+               return crow::response(201, "Sale added. Warning: Stock below alert level!");
+
+            }
+            else {
+                saveProducts(db_products, products);
+                saveSales(db_sales, sales);
+                return crow::response(200, "Sale added successfully");
+            }
+        }
+    }
+   return crow::response(404, "Product not found");
 });
 
 

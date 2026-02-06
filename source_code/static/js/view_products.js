@@ -60,6 +60,7 @@ async function loadProducts() {
                 <td>€${p.cost?.toFixed(2) ?? "0.00"}</td>
                 <td>€${p.price?.toFixed(2) ?? "0.00"}</td>
                 <td>${p.discount ?? 0}%</td>
+                <td>€${p.price_discount?.toFixed(2) ?? "0.00"}</td>
             `;
             productsTableBody.appendChild(row);
         });

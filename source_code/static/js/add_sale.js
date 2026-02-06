@@ -27,7 +27,6 @@ logoutBtn.addEventListener("click", async () => {
         console.error("Logout error:", err);
     }
 });
-
 // --- Add sale form submit ---
 addSaleForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -44,7 +43,9 @@ addSaleForm.addEventListener("submit", async (e) => {
         name: document.getElementById("name").value,
         quantity: parseInt(document.getElementById("quantity").value),
         price: parseFloat(document.getElementById("price").value),
-        discount: parseFloat(document.getElementById("discount").value)
+        discount: parseFloat(document.getElementById("discount").value),
+        cost: parseFloat(document.getElementById("cost").value)
+        
     };
 
     try {
@@ -57,14 +58,21 @@ addSaleForm.addEventListener("submit", async (e) => {
             body: JSON.stringify(saleData)
         });
 
-        if (res.ok) {
+        if (res.status === 200) {
             alert("Sale added successfully!");
             addSaleForm.reset();
         } else if (res.status === 401) {
             alert("Session expired. Please log in again.");
             localStorage.removeItem("sessionToken");
             window.location.href = "/";
-        } else {
+        } else if (res.status === 500) {
+            alert("Failed to add Sale: Insufficient stock");
+        }else if(res.status === 201) {
+            alert("Sale added successfully with low stock warning.");
+            addSaleForm.reset();
+        } else if(res.status === 404) {
+            alert("Product not found or invalid sale data.");
+        }else {
             alert("Failed to add Sale");
         }
     } catch (err) {
