@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prodexa - View Customers</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/view_customers.css">
+    <script type="module" src="/js/view_customers.js" defer></script>
+       <link rel="stylesheet" href="/css/menu_bar.css">
+     <script src="/js/menu_bar.js" defer></script>
+</head>
+<body>
+
+<div class="dashboard-container">
+  <div class="top-buttons">
+        <button class="back-btn" onclick="window.location.href='/dashboard'">Back</button>
+        <button class="logout-btn" id="logoutBtn" type="submit">Logout</button>
+    </div>
+   
+
+    <h1 class="dashboard-title">Customers</h1>
+
+    <!-- Products Table -->
+    <table class="customers-table" id="CustomersTable">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Type</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Post Code</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JS will populate rows here -->
+        </tbody>
+    </table>
+
+    <div class="dashboard-footer">
+        &copy; 2026 Northstack Ltd. All rights reserved.
+        
+    </div>
+
+</div>
+
+</body>
+</html>
+</html>

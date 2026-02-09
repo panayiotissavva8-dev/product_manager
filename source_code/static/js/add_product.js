@@ -45,7 +45,8 @@ addProductForm.addEventListener("submit", async (e) => {
         stock_alert: parseInt(document.getElementById("stock_alert").value),
         cost: parseFloat(document.getElementById("cost").value),
         price: parseFloat(document.getElementById("price").value),
-        discount: parseFloat(document.getElementById("discount").value)
+        discount: parseFloat(document.getElementById("discount").value),
+        vat_amount: parseFloat(document.getElementById("vat_amount").value)
     };
 
     try {

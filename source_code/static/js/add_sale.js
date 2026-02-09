@@ -13,7 +13,8 @@ const inputs = {
     quantity: document.getElementById("quantity"),
     cost: document.getElementById("cost"),
     price: document.getElementById("price"),
-    discount: document.getElementById("discount")
+    discount: document.getElementById("discount"),
+    vat_amount: document.getElementById("vat_amount")
 };
 
 let dirty = false;
@@ -85,6 +86,7 @@ async function searchProduct() {
         inputs.cost.value = p.cost;
         inputs.price.value = p.price;
         inputs.discount.value = p.discount;
+        inputs.vat_amount.value = p.vat_amount;
 
         // Lock fields
         Object.values(inputs).forEach(i => i.disabled = true);
@@ -139,7 +141,8 @@ saveBtn.onclick = async () => {
         quantity: Number(inputs.quantity.value),
         cost: Number(inputs.cost.value),
         price: Number(inputs.price.value),
-        discount: Number(inputs.discount.value)
+        discount: Number(inputs.discount.value),
+        vat_amount: Number(inputs.vat_amount.value)
     };
 
     try {
@@ -157,16 +160,16 @@ saveBtn.onclick = async () => {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem("sessionToken");
                 window.location.href = "/";
-            }else if (res.status === 422) {
+            }else if (res.status === 400) {
                 alert("Insufficient stock for this sale. Please adjust the quantity and try again.");
-            }else if (res.status === 201) { 
+            }else if (res.status === 403) { 
                 alert("Sale added. Warning: Stock below alert level! Please restock soon.");
             }else if (res.status === 200) {
                 alert("Sale added successfully");
             }
             else {
-                alert("Failed to add sale. Please check the input and try again.");
-            }
+                alert("Failed to add sale. Please check the input and try again.");   
+             }
             return;
         }
 

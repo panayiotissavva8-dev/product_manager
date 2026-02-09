@@ -88,22 +88,26 @@ async function salesReportGen() {
                 <td>${p.monthly_units}</td>
                <td>${p.monthly_revenue.toFixed(2)}</td>
                <td>${p.monthly_cost.toFixed(2)}</td>
+               <td>${p.vat_amount ?? 0}%</td>
                <td>${p.monthly_profit.toFixed(2)}</td>`;
             salesTableBody.appendChild(row);
         });
 }
 
-
-// Call salesReportGen when the page is loaded
-
 window.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM loaded, calling salesReportGen"); 
-    salesReportGen();
+    const btn = document.getElementById("viewSalesReportBtn");
 
-    // Add event listeners to month and year dropdowns
-   
-   const btn = document.getElementById("viewSalesBtn");
     btn.addEventListener("click", () => {
-        salesReportGen(); // fetch updated report
+        const month = document.getElementById("month").value;
+        const year = document.getElementById("year").value;
+        console.log("Fetching sales for", month, year);
+        salesReportGen(month, year);
     });
+
+    // Optionally, fetch default month/year on page load
+    const defaultMonth = document.getElementById("month").value;
+    const defaultYear = document.getElementById("year").value;
+    salesReportGen(defaultMonth, defaultYear);
 });
+  
+   

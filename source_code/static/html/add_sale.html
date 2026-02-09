@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/css/edit_product.css">
     <link rel="stylesheet" href="/css/dashboard.css">
     <script src="/js/add_sale.js" defer></script>
+       <link rel="stylesheet" href="/css/menu_bar.css">
+     <script src="/js/menu_bar.js" defer></script>
 </head>
 <body>
 
@@ -64,6 +66,12 @@
                 <label>Discount</label>
                 <input type="number" step="0.01" id="discount" disabled>
                 <button data-field="discount">Edit</button>
+            </div>
+
+             <div class="field editable">
+                <label>VAT</label>
+                <input type="number" step="0.01" id="vat_amount" disabled>
+                <button data-field="vat_amount">Edit</button>
             </div>
 
             <button id="saveBtn" class="save-btn">Add Sale</button>

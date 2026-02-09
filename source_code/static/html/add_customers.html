@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prodexa - Add Customers</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/add_customers.css">
+    <script type="module" src="/js/add_customers.js" defer></script>
+       <link rel="stylesheet" href="/css/menu_bar.css">
+     <script src="/js/menu_bar.js" defer></script>
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <!-- Top buttons: Back left, Logout right -->
+    <div class="top-buttons">
+        <button class="back-btn" onclick="window.location.href='/dashboard'">Back</button>
+        <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
+    </div>
+
+    <h1 class="dashboard-title">Add Customer</h1>
+
+    <!-- Form -->
+    <form id="addCustomerForm" class="customer-form">
+        <label for="customer">Customer</label>
+        <input type="text" id="customer" name="customer" required>
+
+       <label for="type">Type</label>
+        <select id="type" name="type" required>
+            <option value="" disabled selected>Select type</option>
+            <option value="individual">Individual</option>
+            <option value="business">Business</option>
+        </select>
+
+        <label for="email">Email</label>
+        <input type="text" id="email" name="email" required>
+
+        <label for="phone">Phone</label>
+        <input type="number" id="phone" name="phone" required>
+
+        <label for="address">Address</label>
+        <input type="text" id="address" name="address" required>
+
+        <label for="postCode">Post Code</label>
+        <input type="text" id="postCode" name="postCode" required>
+
+        <button type="submit" class="submit-btn">Add Customer</button>
+    </form>
+
+     <!---Footer--->
+        <div class="footer">
+            &copy; 2026 Northstack Ltd. All rights reserved.
+        </div>
+
+</div>
+
+</body>
+</html>

@@ -84,7 +84,7 @@ async function loadSales() {
                 <td>${p.quantity}</td>
                 <td>€${Number(p.price).toFixed(2)}</td>
                 <td>${p.discount}%</td>
-                <td>€${Number(p.price_discount).toFixed(2)}</td>
+                <td>${p.vat_amount}%</td>
                 <td>€${Number(p.total_price).toFixed(2)}</td>
                 <td>${new Date(p.date).toLocaleString()}</td>
             `;

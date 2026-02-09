@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/css/sales_report.css">
     <link rel="stylesheet" href="/css/dashboard.css">
     <script src="/js/sales_report.js" defer></script>
+     <script src="/js/menu_bar.js" defer></script>
+    <script type="module" src="/js/view_products.js" defer></script>
 </head>
 <body>
 
@@ -53,7 +55,7 @@
                     <option value="2029">2029</option>
                     <option value="2030">2030</option>
                 </select>
-                <button id="viewSalesBtn" type="button">View Sales</button>
+                <button id="viewSalesReportBtn" type="button">View Sales</button>
         </div>
 
         <!-- Data output -->
@@ -68,6 +70,7 @@
                         <th>Monthly Units Sold</th>
                         <th>Monthly Revenue (€)</th>
                         <th>Monthly Cost (€)</th>
+                        <th>VAT Amount (%)</th>
                         <th>Monthly Profit (€)</th>
                     </tr>
                  </thead>

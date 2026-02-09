@@ -2,7 +2,7 @@
 .products-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 40px;
     background: #1e1e1e; /* same dark background as cards */
     border-radius: 12px;
     overflow: hidden; /* for rounded corners */

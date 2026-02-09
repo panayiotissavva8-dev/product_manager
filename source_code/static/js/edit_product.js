@@ -14,7 +14,8 @@ const inputs = {
     stock_alert: document.getElementById("stock_alert"),
     cost: document.getElementById("cost"),
     price: document.getElementById("price"),
-    discount: document.getElementById("discount")
+    discount: document.getElementById("discount"),
+    vat_amount: document.getElementById("vat_amount")
 };
 
 let dirty = false;
@@ -88,6 +89,7 @@ async function searchProduct() {
         inputs.cost.value = p.cost;
         inputs.price.value = p.price;
         inputs.discount.value = p.discount;
+        inputs.vat_amount.value = p.vat_amount;
 
         // Lock fields
         Object.values(inputs).forEach(i => i.disabled = true);
@@ -143,7 +145,8 @@ saveBtn.onclick = async () => {
         stock_alert: Number(inputs.stock_alert.value),
         cost: Number(inputs.cost.value),
         price: Number(inputs.price.value),
-        discount: Number(inputs.discount.value)
+        discount: Number(inputs.discount.value),
+        vat_amount: Number(inputs.vat_amount.value)
     };
 
     try {

@@ -25,7 +25,7 @@ async function loadUsers(){
         }
 
         const data = await res.json();
-        const users = Array.isArray(data) ? data : data.products || [];
+        const users = Array.isArray(data) ? data : data.users || [];
 
         if(!usersTableBody){
             console.error("Table body not found!");

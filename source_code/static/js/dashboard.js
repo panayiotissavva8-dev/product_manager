@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const viewaddSaleBtn = document.getElementById("viewaddSaleBtn");
     const viewSalesReportBtn = document.getElementById("viewSalesReportBtn");
     const viewUsersBtn = document.getElementById("viewUsersBtn");
+    const viewCustomersBtn = document.getElementById("viewCustomersBtn");
+     const viewaddCustomersBtn = document.getElementById("viewaddCustomersBtn");
 
     const token = localStorage.getItem("sessionToken");
     if (!token) {
@@ -64,6 +66,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if(viewUsersBtn){
         viewUsersBtn.addEventListener("click", () =>  window.location.href = "/view_users");
+    }
+     if(viewCustomersBtn){
+        viewCustomersBtn.addEventListener("click", () =>  window.location.href = "/view_customers");
+    }
+    if(viewaddCustomersBtn){
+        viewaddCustomersBtn.addEventListener("click", () =>  window.location.href = "/add_customers");
     }
 
     //  LOGOUT
