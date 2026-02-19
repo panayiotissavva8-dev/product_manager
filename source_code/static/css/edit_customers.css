@@ -1,0 +1,189 @@
+/* ===== Page Wrapper ===== */
+.page-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ===== Main Card (same as dashboard container, smaller) ===== */
+.edit-card {
+    width: 600px;
+    max-width: 95%;
+    min-height: 520px;
+
+    background: var(--bg-card);
+    backdrop-filter: var(--blur);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius);
+    padding: 48px 32px 32px;
+
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+
+/* ===== Corner Buttons ===== */
+.corner-btn {
+    position: absolute;
+    top: 20px;
+
+    background: transparent;
+    border: 1px solid var(--border-card);
+    color: var(--text-main);
+
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.corner-btn.left {
+    left: 20px;
+    background: #2563eb
+}
+
+.corner-btn.right {
+    right: 20px;
+}
+
+/* Back button hover */
+.corner-btn.left:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+}
+
+/* Logout button */
+.corner-btn.danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.corner-btn.danger:hover {
+    background: var(--danger);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* ===== Title ===== */
+.edit-card h1 {
+    text-align: center;
+    margin-bottom: 32px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* ===== Search ===== */
+.search-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    color: var(--text-main);
+}
+
+.search-box input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-box button {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.search-box button:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+/* ===== Form ===== */
+.customer-form.hidden {
+    display: none;
+}
+
+.field {
+    margin-bottom: 18px;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.field input {
+    width: 100%;
+    padding: 11px 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    color: var(--text-main);
+}
+
+/* ===== Editable Fields ===== */
+.field.editable {
+    position: relative;
+}
+
+.field.editable button {
+    position: absolute;
+    right: 8px;
+    top: 30px;
+
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border-card);
+    color: var(--text-main);
+
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.field.editable button:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-1px);
+}
+
+/* ===== Save Button ===== */
+.save-btn {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.save-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+}
+
+.dashboard-footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 13px;
+    opacity: 0.7;
+}

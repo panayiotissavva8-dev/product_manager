@@ -2,11 +2,12 @@
 .customers-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 40px;
     background: #1e1e1e; /* same dark background as cards */
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden; /* for rounded corners */
     box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+
 }
 
 .customers-table thead {
@@ -14,9 +15,9 @@
 }
 
 .customers-table th, .products-table td {
-    padding: 12px 5px;
+    padding: 12px 15px;
     text-align: left;
-    font-size: 14px;
+    font-size: 20px;
     color: #ffffff;
 }
 

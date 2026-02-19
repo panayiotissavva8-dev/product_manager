@@ -7,6 +7,7 @@ const productForm = document.getElementById("productForm");
 const saveBtn = document.getElementById("saveBtn");
 
 const inputs = {
+    customerId: document.getElementById("customerSelect"),
     code: document.getElementById("code"),
     brand: document.getElementById("brand"),
     name: document.getElementById("name"),
@@ -19,49 +20,38 @@ const inputs = {
 
 let dirty = false;
 
+// ===== Lock all fields by default =====
+Object.values(inputs).forEach(i => i.disabled = true);
+
 // ===== Navigation =====
 backBtn.onclick = () => window.location.href = "/dashboard";
 
 logoutBtn.addEventListener("click", async () => {
     const token = localStorage.getItem("sessionToken");
-
-    if (!token) {
-        window.location.href = "/";
-        return;
-    }
+    if (!token) { window.location.href = "/"; return; }
 
     try {
         const res = await fetch("/logout", {
             method: "POST",
             headers: { "Authorization": token }
         });
-
         if (res.ok) {
             localStorage.removeItem("sessionToken");
             window.location.href = "/";
-        } else {
-            console.error("Logout failed on server");
-        }
-    } catch (err) {
-        console.error("Logout error:", err);
-    }
+        } else console.error("Logout failed on server");
+    } catch (err) { console.error("Logout error:", err); }
 });
 
 // ===== Search Product =====
 searchBtn.onclick = searchProduct;
-searchInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") searchProduct();
-});
+searchInput.addEventListener("keydown", e => { if (e.key === "Enter") searchProduct(); });
 
 async function searchProduct() {
     const query = searchInput.value.trim();
     if (!query) return;
 
     const token = localStorage.getItem("sessionToken");
-    if (!token) {
-        window.location.href = "/";
-        return;
-    }
+    if (!token) { window.location.href = "/"; return; }
 
     searchBtn.disabled = true;
     searchBtn.textContent = "Searching...";
@@ -72,14 +62,12 @@ async function searchProduct() {
             headers: { "Authorization": token }
         });
 
-        if (!res.ok) {
-            alert("Product not found");
-            return;
-        }
+        if (!res.ok) { alert("Product not found"); return; }
 
         const p = await res.json();
 
         // Fill fields
+        inputs.customerId.value = p.customerId || "";
         inputs.code.value = p.code;
         inputs.brand.value = p.brand;
         inputs.name.value = p.name;
@@ -88,7 +76,7 @@ async function searchProduct() {
         inputs.discount.value = p.discount;
         inputs.vat_amount.value = p.vat_amount;
 
-        // Lock fields
+        // Keep fields locked until edit
         Object.values(inputs).forEach(i => i.disabled = true);
 
         productForm.classList.remove("hidden");
@@ -102,6 +90,30 @@ async function searchProduct() {
         searchBtn.disabled = false;
         searchBtn.textContent = "Search";
     }
+}
+
+// ===== Load Customers into Dropdown =====
+async function loadCustomers() {
+    const token = localStorage.getItem("sessionToken");
+    if (!token) return;
+
+    try {
+        const res = await fetch("/api/customers", { headers: { Authorization: token } });
+        if (!res.ok) { console.error("Failed to load customers"); return; }
+
+        const data = await res.json();
+        const customers = data.Customers || [];
+        const select = document.getElementById("customerSelect");
+        select.innerHTML = `<option value="">Select customer</option>`;
+        customers.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.customer_id;
+            opt.textContent = c.customer;
+            select.appendChild(opt);
+        });
+
+        select.disabled = true; // lock dropdown initially
+    } catch (err) { console.error("Error loading customers", err); }
 }
 
 // ===== Enable Editing =====
@@ -126,15 +138,13 @@ saveBtn.onclick = async () => {
     if (!dirty) return;
 
     const token = localStorage.getItem("sessionToken");
-    if (!token) {
-        window.location.href = "/";
-        return;
-    }
+    if (!token) { window.location.href = "/"; return; }
 
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving...";
 
     const payload = {
+        customer_id: inputs.customerId.value,
         code: Number(inputs.code.value),
         brand: inputs.brand.value,
         name: inputs.name.value,
@@ -160,20 +170,17 @@ saveBtn.onclick = async () => {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem("sessionToken");
                 window.location.href = "/";
-            }else if (res.status === 400) {
-                alert("Insufficient stock for this sale. Please adjust the quantity and try again.");
-            }else if (res.status === 403) { 
-                alert("Sale added. Warning: Stock below alert level! Please restock soon.");
-            }else if (res.status === 200) {
-                alert("Sale added successfully");
+            } else if (res.status === 400) {
+                alert("Insufficient stock for this sale. Adjust quantity and try again.");
+            } else if (res.status === 403) {
+                alert("Sale added. Warning: Stock below alert level!");
+            } else {
+                alert("Failed to add sale. Check input and try again.");   
             }
-            else {
-                alert("Failed to add sale. Please check the input and try again.");   
-             }
             return;
         }
 
-        // Re-lock fields
+        // Re-lock fields after saving
         Object.values(inputs).forEach(i => i.disabled = true);
         dirty = false;
         alert("Sale added successfully");
@@ -186,3 +193,6 @@ saveBtn.onclick = async () => {
         saveBtn.disabled = false;
     }
 };
+
+// ===== Init =====
+window.addEventListener("DOMContentLoaded", loadCustomers);

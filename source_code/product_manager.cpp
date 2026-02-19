@@ -32,7 +32,8 @@ struct Product {
 
 struct sale {
     string owner;
-    string customer_id;
+    int customer_id;
+    string customer;
     int code;
     string brand;
     string name;
@@ -194,78 +195,87 @@ string hashPassword(const std::string& password) {
 void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
     sales.clear();
     sqlite3_stmt* stmt;
-    // Case-insensitive username match
-    const char* sql = "SELECT code, brand, name, quantity, price, discount, vat_amount, total_price, sum_price, cost, total_cost, date "
-                  "FROM sales WHERE LOWER(owner) = LOWER(?);";
 
-    
-                      cout << "Loading sales for user: '" << username << "'" << endl;
-
+    const char* sql =
+       "SELECT s.customer_id, c.customer, s.code, s.brand, s.name, s.quantity, s.price, s.discount, s.vat_amount, s.total_price, s.sum_price, s.cost, s.total_cost, s.date "
+        "FROM sales s "
+        "LEFT JOIN customers c ON s.customer_id = c.customer_id "
+        "WHERE LOWER(s.owner) = LOWER(?);";
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Failed to prepare loadSales stmt: " << sqlite3_errmsg(db) << std::endl;
+        cerr << "Failed to prepare loadSales stmt: " << sqlite3_errmsg(db) << endl;
         return;
     }
 
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
-    cout << "Executing query for username: '" << username << "'" << endl;
 
+     while (sqlite3_step(stmt) == SQLITE_ROW) {
+    sale s;
+    s.owner = username;
+    s.customer_id = sqlite3_column_int(stmt, 0);
+    const unsigned char* customer_text = sqlite3_column_text(stmt, 1);
+    s.customer = customer_text ? reinterpret_cast<const char*>(customer_text) : "";
 
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        sale s;
-        s.owner = username;
-        s.code = sqlite3_column_int(stmt, 0);
-        s.brand = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        s.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        s.quantity = sqlite3_column_int(stmt, 3);
-        s.price = sqlite3_column_double(stmt, 4);
-        s.discount = sqlite3_column_double(stmt, 5);
-        s.vat_amount = sqlite3_column_int(stmt, 6);
-        s.total_price = sqlite3_column_double(stmt, 7);
-        s.sum_price = sqlite3_column_double(stmt, 8);
-        s.cost = sqlite3_column_double(stmt, 9);
-        s.total_cost = sqlite3_column_double(stmt, 10);
-        const unsigned char* date_text = sqlite3_column_text(stmt, 11);
-        
-        s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
-        sales.push_back(s);
-    }
-    cout << "Total sales loaded: " << sales.size() << endl;
+    s.code = sqlite3_column_int(stmt, 2);
+    const unsigned char* brand_text = sqlite3_column_text(stmt, 3);
+    s.brand = brand_text ? reinterpret_cast<const char*>(brand_text) : "";
 
+    const unsigned char* name_text = sqlite3_column_text(stmt, 4);
+    s.name = name_text ? reinterpret_cast<const char*>(name_text) : "";
+
+    s.quantity = sqlite3_column_int(stmt, 5);
+    s.price = sqlite3_column_double(stmt, 6);
+    s.discount = sqlite3_column_double(stmt, 7);
+    s.vat_amount = sqlite3_column_double(stmt, 8);
+    s.total_price = sqlite3_column_double(stmt, 9);
+    s.sum_price = sqlite3_column_double(stmt, 10);
+    s.cost = sqlite3_column_double(stmt, 11);
+    s.total_cost = sqlite3_column_double(stmt, 12);
+
+    const unsigned char* date_text = sqlite3_column_text(stmt, 13);
+    s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
+
+    sales.push_back(s);
+}
 
     sqlite3_finalize(stmt);
 }
 
 
+
 void saveSales(sqlite3* db, const vector<sale>& sales) {
     sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO sales (owner, code, brand, name, quantity, price, discount, vat_amount, total_price, sum_price, cost, total_cost, date) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+    const char* sql =
+        "INSERT INTO sales (owner, customer_id, code, brand, name, quantity, "
+        "price, discount, vat_amount, total_price, sum_price, cost, total_cost, date) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Failed to prepare saveSales stmt: " << sqlite3_errmsg(db) << std::endl;
+        cerr << "Failed to prepare saveSales stmt: " << sqlite3_errmsg(db) << endl;
         return;
     }
 
     for (const auto& s : sales) {
         sqlite3_bind_text(stmt, 1, s.owner.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 2, s.code);
-        sqlite3_bind_text(stmt, 3, s.brand.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 4, s.name.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 5, s.quantity);
-        sqlite3_bind_double(stmt, 6, s.price);
-        sqlite3_bind_double(stmt, 7, s.discount);
-        sqlite3_bind_double(stmt, 8, s.vat_amount);
-        sqlite3_bind_double(stmt, 9, s.total_price);
-         sqlite3_bind_double(stmt, 10, s.sum_price);
-        sqlite3_bind_double(stmt, 11, s.cost);
-        sqlite3_bind_double(stmt, 12, s.total_cost);
+        sqlite3_bind_int(stmt, 2, s.customer_id);
+        sqlite3_bind_int(stmt, 3, s.code);
+        sqlite3_bind_text(stmt, 4, s.brand.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 5, s.name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 6, s.quantity);
+        sqlite3_bind_double(stmt, 7, s.price);
+        sqlite3_bind_double(stmt, 8, s.discount);
+        sqlite3_bind_double(stmt, 9, s.vat_amount);
+        sqlite3_bind_double(stmt, 10, s.total_price);
+        sqlite3_bind_double(stmt, 11, s.sum_price);
+        sqlite3_bind_double(stmt, 12, s.cost);
+        sqlite3_bind_double(stmt, 13, s.total_cost);
 
-        // Use the date from the object; fallback to now if empty
-        std::string date_to_save = s.date.empty() ? getCurrentDateTime() : s.date;
-        sqlite3_bind_text(stmt, 13, date_to_save.c_str(), -1, SQLITE_TRANSIENT);
+        string date_to_save = s.date.empty() ? getCurrentDateTime() : s.date;
+        sqlite3_bind_text(stmt, 14, date_to_save.c_str(), -1, SQLITE_TRANSIENT);
+
         if (sqlite3_step(stmt) != SQLITE_DONE) {
-            std::cerr << "Insert failed: " << sqlite3_errmsg(db) << std::endl;
+            cerr << "Insert failed: " << sqlite3_errmsg(db) << endl;
         }
 
         sqlite3_reset(stmt);
@@ -274,6 +284,7 @@ void saveSales(sqlite3* db, const vector<sale>& sales) {
 
     sqlite3_finalize(stmt);
 }
+
 
 void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& username, int month, int year) {
     sqlite3_stmt* stmt;
@@ -291,6 +302,12 @@ void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& use
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, mm.str().c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 3, std::to_string(year).c_str(), -1, SQLITE_TRANSIENT);
+    cout << "Binding month: " << mm.str() << ", year: " << year << endl;
+    cout << "SQL bind: username=" << username
+     << ", month=" << mm.str()
+     << ", year=" << year << endl;
+
+
     
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -304,6 +321,7 @@ void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& use
     r.month = std::to_string(month) + "/" + std::to_string(year);
     reports.push_back(r);
     }
+
 
 
     sqlite3_finalize(stmt);
@@ -341,7 +359,7 @@ void loadUsers(sqlite3* db, vector<UsersData>& Users, const string& username){
 
 void loadCustomers(sqlite3* db, vector<CustomerData>& Customers, const string& username){
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT customer, type, email, phone, address, postCode FROM customers "
+    const char* sql = "SELECT customer_id, customer, type, email, phone, address, postCode FROM customers "
                       "WHERE LOWER(owner) = LOWER(?);";
 
     if(sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK){
@@ -359,25 +377,27 @@ std::cout << "Columns returned: " << colCount << std::endl;
         CustomerData c;
         c.owner = username;
 
-        const unsigned char* val = sqlite3_column_text(stmt, 0);
-std::cout << "Customer: " << (val ? reinterpret_cast<const char*>(val) : "NULL") << std::endl;
+        std::cout << "Customer ID: " << sqlite3_column_int(stmt, 0) << std::endl;
+
 
         const unsigned char* textVal;
 
-        textVal = sqlite3_column_text(stmt, 0);   
-        c.customer = textVal ? reinterpret_cast<const char*>(textVal) : "";
+        c.customer_id = sqlite3_column_int(stmt, 0);
 
         textVal = sqlite3_column_text(stmt, 1);   
+        c.customer = textVal ? reinterpret_cast<const char*>(textVal) : "";
+
+        textVal = sqlite3_column_text(stmt, 2);   
         c.type = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        textVal = sqlite3_column_text(stmt, 2);  
+        textVal = sqlite3_column_text(stmt, 3);  
         c.email = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        textVal = sqlite3_column_text(stmt, 4); 
+        textVal = sqlite3_column_text(stmt, 5); 
         c.address = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        c.phone = sqlite3_column_int(stmt, 3);   
-        c.postCode = sqlite3_column_int(stmt, 5); 
+        c.phone = sqlite3_column_int(stmt, 4);   
+        c.postCode = sqlite3_column_int(stmt, 6); 
         Customers.push_back(c);
     }
 
@@ -385,36 +405,83 @@ std::cout << "Customer: " << (val ? reinterpret_cast<const char*>(val) : "NULL")
 }
 
 
-void saveCustomers(sqlite3* db, vector<CustomerData>& Customers){
+void saveCustomers(sqlite3* db, std::vector<CustomerData>& Customers, const string& username) {
+
+    const char* sql ="INSERT INTO customers (owner, customer, type, email, phone, address, postCode) "
+                     "VALUES (?, ?, ?, ?, ?, ?, ?);";
+
     sqlite3_stmt* stmt;
-    const char* sql = "INSERT INTO customers (owner, customer, type, email, phone, address, postCode)"
-                      "VALUES (?, ?, ?, ?, ?, ?, ?);";
-    
-     if(sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK){
-        std::cerr<<"Failed to prepare saveCustomers stmt; " << sqlite3_errmsg(db) << std::endl;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare saveCustomers stmt: "
+                  << sqlite3_errmsg(db) << std::endl;
         return;
     }
 
-    for(const auto& c : Customers){
+    for (const auto& c : Customers) {
         sqlite3_bind_text(stmt, 1, c.owner.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, c.customer.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 3, c.type.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 4, c.email.c_str(), -1, SQLITE_TRANSIENT);
-         sqlite3_bind_int(stmt, 5, c.phone);
+        sqlite3_bind_int (stmt, 5, c.phone);
         sqlite3_bind_text(stmt, 6, c.address.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int(stmt, 7, c.postCode);
+        sqlite3_bind_int (stmt, 7, c.postCode);
 
-     if (sqlite3_step(stmt) != SQLITE_DONE) {
-        std::cerr << "Insert failed: " << sqlite3_errmsg(db) << std::endl;
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            std::cerr << "Update failed: "
+                      << sqlite3_errmsg(db) << std::endl;
         }
 
-    sqlite3_reset(stmt);
-    sqlite3_clear_bindings(stmt);
-
+        sqlite3_reset(stmt);
+        sqlite3_clear_bindings(stmt);
     }
 
-    sqlite3_finalize(stmt);    
+    sqlite3_finalize(stmt);
 }
+
+bool updateCustomer(const crow::json::rvalue& body, sqlite3* db, const std::string& username) {
+    if (!body.has("customer_id"))
+        return false;
+
+    int customer_id = body["customer_id"].i();
+
+    const char* sql =
+        "UPDATE customers SET customer=?, type=?, email=?, phone=?, address=?, postCode=? "
+        "WHERE customer_id=? AND owner=?;";
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+        sqlite3_bind_text(stmt, 1, std::string(body["customer"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, std::string(body["type"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, std::string(body["email"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, std::string(body["phone"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, std::string(body["address"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, std::string(body["postCode"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 7, body["customer_id"].i());
+    sqlite3_bind_text(stmt, 8, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    std::cout << "Updating ID: " << customer_id << std::endl;
+    std::cout << "Owner from token: '" << username << "'" << std::endl;
+
+
+
+
+
+    bool updated = (sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0);
+    sqlite3_finalize(stmt);
+
+    int changes = sqlite3_changes(db);
+if (changes == 0) {
+    std::cerr << "No row updated. customer_id=" << customer_id << ", owner=" << username << std::endl;
+    return false;
+}
+
+
+    return updated;
+}
+
+
 
 
 
@@ -439,8 +506,8 @@ int main() {
    // vector<sale> sales;
 
     vector<Product> products;
-
     vector<CustomerData> Customers;
+
 
     crow::SimpleApp app;
 
@@ -668,9 +735,9 @@ cout << "SESSION USERNAME = [" << username << "]" << endl;
 
     int i = 0;
     for (const auto& s : sales) {
-     //   if (p.owner != username) continue; // only return sales of the logged-in user
         crow::json::wvalue obj;
         obj["user"] = s.owner;
+        obj["customer"] = s.customer;
         obj["code"] = s.code;
         obj["brand"] = s.brand;
         obj["name"] = s.name;
@@ -698,8 +765,21 @@ if (token.empty() || sessions.find(token) == sessions.end())
     if (!monthStr || !yearStr)
         return crow::response(400, "Missing month or year");
 
-    int month = std::stoi(monthStr);
-    int year  = std::stoi(yearStr);
+        int month, year;
+
+        try{
+            month = std::stoi(monthStr);
+            year = std::stoi(yearStr);
+        } catch (const std::exception& e) {
+            return crow::response(400, "Invalid month or year format");
+        }
+
+         if (month < 1 || month > 12)
+            return crow::response(400, "Month must be between 1 and 12");
+
+        if(year < 2000 || year > 2100)
+            return crow::response(400, "Year must be between 2000 and 2100");
+    
 
 string username = sessions[token];
 transform(username.begin(), username.end(), username.begin(), ::tolower);
@@ -725,6 +805,7 @@ cout << "Reports generated: " << reports.size() << endl;
 
     return crow::response(200, out);
 });
+
 
 CROW_ROUTE(app, "/api/users")
 ([&db_prodexa](const crow::request& req){
@@ -756,7 +837,7 @@ CROW_ROUTE(app, "/api/users")
 });
 
 
-
+// --- DISPLAY CUSTOMERS ---
 CROW_ROUTE(app, "/api/customers")
 ([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
@@ -765,7 +846,10 @@ if(token.empty() || sessions.find(token) == sessions.end())
 
    string username = sessions[token];
 
+
    vector<CustomerData> Customers;
+   Customers.clear();
+
    loadCustomers(db_prodexa, Customers, username);
 
    crow::json::wvalue out;
@@ -774,6 +858,7 @@ if(token.empty() || sessions.find(token) == sessions.end())
   std::vector<crow::json::wvalue> tempCustomers;
 for (const auto& c : Customers) {
     crow::json::wvalue obj;
+    obj["customer_id"] = c.customer_id;
     obj["customer"] = c.customer;
     obj["type"] = c.type;
     obj["email"] = c.email;
@@ -787,6 +872,49 @@ out["Customers"] = std::move(tempCustomers);
 
    return crow::response(200, out);
 
+});
+
+
+// --- GET CUSTOMER INFO ---
+CROW_ROUTE(app, "/get_customers")
+([&Customers, &db_prodexa](const crow::request& req){
+    auto query_param = req.url_params.get("query");
+    if (!query_param) return crow::response(400, "Missing query");
+
+    string query = query_param;
+
+    auto token = req.get_header_value("Authorization");
+if (token.empty() || sessions.find(token) == sessions.end())
+    return crow::response(401, "Not logged in");
+
+string username = sessions[token];
+vector<CustomerData> Customers;
+Customers.clear();
+
+loadCustomers(db_prodexa, Customers, username);
+
+
+    for (const auto& c : Customers) {
+       string name_lower = c.customer;
+       string query_lower = query;
+
+    transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+    transform(query_lower.begin(), query_lower.end(), query_lower.begin(), ::tolower);
+
+if (name_lower.find(query_lower) != string::npos) {
+            crow::json::wvalue res;
+            res["customer_id"] = c.customer_id;
+            res["customer"] = c.customer;
+            res["type"] = c.type;
+            res["email"] = c.email;
+            res["phone"] = c.phone;
+            res["address"] = c.address;
+            res["postCode"] = c.postCode;
+            return crow::response(200, res);
+        }
+    }
+
+    return crow::response(404, "Customer not found");
 });
 
 
@@ -970,6 +1098,20 @@ CROW_ROUTE(app, "/add_customers")([](){
 
 });
 
+// --- EDIT CUSTOMERS PAGE ---
+CROW_ROUTE(app, "/edit_customers")([](){
+    ifstream file("static/html/edit_customers.html", ios::binary);
+    if(!file.is_open())
+    return crow::response(404,"edit_customers.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
 
 // --- MENU BAR ---
 CROW_ROUTE(app, "/menu_bar")([](){
@@ -1032,6 +1174,9 @@ CROW_ROUTE(app, "/menu_bar")([](){
          if(prod.code == p.code && prod.owner == username)
              return crow::response(409, "Product exists");
 
+        if(p.quantity < 0 || p.stock_alert < 0 || p.cost < 0 || p.price < 0 || p.discount < 0 || p.vat_amount < 0)
+            return crow::response(400, "Negative values are not allowed");
+
          products.push_back(p);
          saveProducts(db_prodexa, products);
         
@@ -1093,6 +1238,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
 
     sale s;
     s.owner = username;
+    s.customer_id = body["customer_id"].i();
     s.code = body["code"].i();
     s.brand = body["brand"].s();
     s.name = body["name"].s();
@@ -1107,7 +1253,11 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
     s.date = getCurrentDateTime();
 
     // Local vector just for this request
-    vector<sale> sales{s};
+    vector<sale> sales;
+    std::cout << "Incoming customer_id: " 
+          << body["customer_id"].i() 
+          << std::endl;
+
 
     // Update product stock
     loadProducts(db_prodexa, products, username);
@@ -1119,14 +1269,24 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
                 return crow::response(400, "Insufficient stock");
             }
             if(p.quantity < p.stock_alert) {
+                sales.push_back(s);
                 saveProducts(db_prodexa, products);
                 saveSales(db_prodexa, sales);
+                std::cout << "Sale struct customer_id: " 
+          << s.customer_id 
+          << std::endl;
+
                return crow::response(403, "Sale added. Warning: Stock below alert level!");
 
             }
             else {
+                 sales.push_back(s);
                 saveProducts(db_prodexa, products);
                 saveSales(db_prodexa, sales);
+                std::cout << "Sale struct customer_id: " 
+          << s.customer_id 
+          << std::endl;
+
                 return crow::response(200, "Sale added successfully");
             }
         }
@@ -1136,34 +1296,61 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 // --- ADD CUSTOMER ---
 CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
-    ([&Customers, &db_prodexa](const crow::request& req){
-        auto body = crow::json::load(req.body);
-        if (!body) return crow::response(400);
+([&Customers, &db_prodexa](const crow::request& req){
 
-        auto token = req.get_header_value("Authorization");
+    auto body = crow::json::load(req.body);
+    if (!body) return crow::response(400);
+
+    auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
+
     string username = sessions[token];
 
-        CustomerData c;
-        c.owner = username;
-        c.customer = body["customer"].s();
-        c.type = body["type"].s();
-        c.email = body["email"].s();
-        c.phone = body["phone"].i();
-        c.address = body["address"].s();
-        c.postCode = body["postCode"].i();
+    CustomerData c;
+    c.owner    = username;
+    c.customer = body["customer"].s();
+    c.type     = body["type"].s();
+    c.email    = body["email"].s();
+    c.phone    = body["phone"].i();
+    c.address  = body["address"].s();
+    c.postCode = body["postCode"].i();
 
-     for(auto& Cust : Customers)
-         if(Cust.email == c.email && Cust.customer == c.customer && Cust.owner == username)
-             return crow::response(409, "Customer exists");
+    for (const auto& Cust : Customers) {
+        if (Cust.email == c.email &&
+            Cust.customer == c.customer &&
+            Cust.owner == username) {
+            return crow::response(409, "Customer exists");
+        }
+    }
 
-         Customers.push_back(c);
-         saveCustomers(db_prodexa,Customers);
-        
-         return crow::response(200, "Customer added");
-        
-    });
+    Customers.push_back(c);
+    saveCustomers(db_prodexa, Customers, username);
+
+    return crow::response(200, "Customer added");
+});
+
+
+// --- UPDATE CUSTOMER ---
+CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
+([&db_prodexa](const crow::request& req){
+    auto body = crow::json::load(req.body);
+    if (!body) return crow::response(400);
+
+    auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+
+    std::string username = sessions[token];
+
+    if (updateCustomer(body, db_prodexa, username))
+        return crow::response(200, "Customer updated successfully");
+    else if(username != body["owner"].s())
+        return crow::response(403, "Forbidden: You do not have permission to perform this action");
+    else
+    return crow::response(404, "Customer not found");
+});
+
 
 
 
@@ -1188,7 +1375,7 @@ CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
 
 //  Compile command:
 
-/* cd source_code
+/*   cd source_code
 clang++ product_manager.cpp \
 -std=c++17 \
 -Iexternal/crow/include \
@@ -1202,4 +1389,4 @@ clang++ product_manager.cpp \
 */
 
 //  Access the application at:
-// http://localhost:18080/
+// http://localhost:18080/ 

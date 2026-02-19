@@ -68,6 +68,8 @@ addProductForm.addEventListener("submit", async (e) => {
             alert("Session expired. Please log in again.");
             localStorage.removeItem("sessionToken");
             window.location.href = "/";
+        }else if (res.status === 400){
+            alerrt("Invalid input: Negative values are not allowed");
         } else {
             alert("Failed to add product");
         }

@@ -108,14 +108,8 @@
     margin-bottom: 14px;
 }
 
-.sales-header h1 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #ffffff;
-}
-
 .sales-header h2 {
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 400;
     opacity: 0.8;
 }
@@ -123,7 +117,6 @@
 /* ===== Search Bar Area ===== */
 .sales-search {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
     gap: 12px;
@@ -132,7 +125,7 @@
 .sales-search input[type="search"] {
     background: #121212;
     border: 1px solid rgba(255,255,255,0.15);
-    color: #ffffff;
+    color: #bbb4b4;
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 14px;
@@ -148,7 +141,7 @@
     border-color: #3b82f6;
 }
 
-/* Optional search button if you use one */
+/* Optional search button */
 .sales-search button {
     padding: 8px 14px;
     border-radius: 6px;
