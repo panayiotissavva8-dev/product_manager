@@ -118,7 +118,6 @@ void loadProducts(sqlite3* db, vector<Product>& products, const string& username
 }
 
 void saveProducts(sqlite3* db, const vector<Product>& products) {
-    sqlite3_exec(db, "DELETE FROM products;", nullptr, nullptr, nullptr);
     sqlite3_stmt* stmt;
     const char* sql = "INSERT INTO products (owner, code, brand, name, quantity, stock_alert, cost, price, discount,  vat_amount, price_discount, total_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
@@ -153,33 +152,66 @@ bool addProduct(const Product& p, vector<Product>& products, sqlite3* db) {
 }
 
 bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sqlite3* db, const string& username) {
+    if (!body.has("code"))
+        return false;
+
     int code = body["code"].i();
-    for (auto& p : products) {
-        if (p.code == code && p.owner == username) {
-            p.brand = body["brand"].s();
-            p.name = body["name"].s();
-            p.quantity = body["quantity"].i();
-            p.stock_alert = body["stock_alert"].i();
-            p.cost = body["cost"].d();
-            p.price = body["price"].d();
-            p.discount = body["discount"].d();
-            p.vat_amount = body["vat_amount"].i();
-            saveProducts(db, products);
-            return true;
-        }
-    }
+
+    const char* sql =
+        "UPDATE products SET brand=?, name=?, quantity=?, stock_alert=?, cost=?, price=?, discount=?, vat_amount=? "
+        "WHERE code=? AND owner=?;";
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+        sqlite3_bind_text(stmt, 1, std::string(body["brand"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, std::string(body["name"].s()).c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, body["quantity"].i());
+    sqlite3_bind_int(stmt, 4, body["stock_alert"].i());
+    sqlite3_bind_double(stmt, 5, body["cost"].d());
+    sqlite3_bind_double(stmt, 6, body["price"].d());
+    sqlite3_bind_double(stmt, 7, body["discount"].d());
+    sqlite3_bind_double(stmt, 8, body["vat_amount"].d());
+    sqlite3_bind_int(stmt, 9, code);
+    sqlite3_bind_text(stmt, 10, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    std::cout << "Updating code: " << code << std::endl;
+    std::cout << "Owner from token: '" << username << "'" << std::endl;
+
+
+
+
+
+    bool updated = (sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0);
+    sqlite3_finalize(stmt);
+
+    int changes = sqlite3_changes(db);
+if (changes == 0) {
+    std::cerr << "No row updated. code=" << code << ", owner=" << username << std::endl;
     return false;
 }
-
-bool deleteProduct(int code, vector<Product>& products, sqlite3* db, const string& username) {
-    auto it = remove_if(products.begin(), products.end(),
-     [&](const Product& p){ return p.code == code && p.owner == username; });
-    if (it == products.end()) return false;
-
-    products.erase(it, products.end());
-    saveProducts(db, products);
-    return true;
+ return updated;
 }
+
+bool deleteProduct(int code, const crow::json::rvalue& body, vector<Product>& products, sqlite3* db, const string& username) {
+   if(!body.has("code"))
+        return false;
+
+    const char* sql = "DELETE FROM products WHERE code=? AND owner=?;";
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+
+    sqlite3_bind_int(stmt, 1, code);
+    sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool deleted = (sqlite3_step(stmt) == SQLITE_DONE);
+    sqlite3_finalize(stmt);
+
+    return deleted;
+}
+
 
 string hashPassword(const std::string& password) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -1009,6 +1041,20 @@ CROW_ROUTE(app, "/edit_product")([](){
     return res;
 });
 
+// --- DELETE PRODUCT PAGE ---
+CROW_ROUTE(app, "/delete_product")([](){
+    ifstream file("static/html/delete_product.html", ios::binary);
+    if (!file.is_open())
+        return crow::response(404, "delete_product.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+
 // --- SALES PAGE ---
 
 // --- VIEW SALES PAGE ---
@@ -1147,7 +1193,7 @@ CROW_ROUTE(app, "/menu_bar")([](){
     });
 
 
-
+   // --- ADD PRODUCT ---
     CROW_ROUTE(app, "/add_product").methods(crow::HTTPMethod::POST)
     ([&products, &db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
@@ -1177,6 +1223,9 @@ CROW_ROUTE(app, "/menu_bar")([](){
         if(p.quantity < 0 || p.stock_alert < 0 || p.cost < 0 || p.price < 0 || p.discount < 0 || p.vat_amount < 0)
             return crow::response(400, "Negative values are not allowed");
 
+        if(p.discount > 100)
+            return crow::response(403, "Discount cannot be greater than 100%");
+
          products.push_back(p);
          saveProducts(db_prodexa, products);
         
@@ -1184,7 +1233,7 @@ CROW_ROUTE(app, "/menu_bar")([](){
         
     });
 
-
+   // --- UPDATE PRODUCT ---
     CROW_ROUTE(app, "/update_product").methods(crow::HTTPMethod::POST)
     ([&products, &db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
@@ -1201,7 +1250,7 @@ CROW_ROUTE(app, "/menu_bar")([](){
             return crow::response(404, "Product not found");
     });
 
-
+   // --- DELETE PRODUCT ---
     CROW_ROUTE(app, "/delete_product").methods(crow::HTTPMethod::POST)
     ([&products, &db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
@@ -1213,14 +1262,14 @@ CROW_ROUTE(app, "/menu_bar")([](){
     string username = sessions[token];
 
         int code = body["code"].i();
-        if(deleteProduct(code, products, db_prodexa, username) )
+        if(deleteProduct(code, body, products, db_prodexa, username) )
             return crow::response(200, "Deleted");
         else
             return crow::response(404, "Product not found");
     });
 
 
-
+  // --- ADD SALE ---
    CROW_ROUTE(app, "/add_sale").methods(crow::HTTPMethod::POST)
    ([&db_prodexa,&products](const crow::request& req) {
 
@@ -1293,6 +1342,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
     }
    return crow::response(404, "Product not found");
 });
+
 
 // --- ADD CUSTOMER ---
 CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
@@ -1385,7 +1435,6 @@ clang++ product_manager.cpp \
 -lsqlite3 -lcrypto -lpthread \
 -o product_manager_app
 ./product_manager_app
-
 */
 
 //  Access the application at:

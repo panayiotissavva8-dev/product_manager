@@ -69,8 +69,10 @@ addProductForm.addEventListener("submit", async (e) => {
             localStorage.removeItem("sessionToken");
             window.location.href = "/";
         }else if (res.status === 400){
-            alerrt("Invalid input: Negative values are not allowed");
-        } else {
+            alert("Invalid input: Negative values are not allowed");
+        }else if (res.status === 403){
+            alert("Invalid input: Discount cannot be greater than 100%");
+        }else {
             alert("Failed to add product");
         }
     } catch (err) {
