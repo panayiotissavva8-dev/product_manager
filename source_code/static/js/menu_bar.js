@@ -6,11 +6,11 @@ fetch("/html/menu_bar.html")
 
 document.addEventListener("click", e => {
     const routes = {
-        viewdashboardBtn: "/dashboard",
+        viewDashboardBtn: "/dashboard",
         viewProductsBtn: "/products",
         viewaddProductBtn: "/add_product",
         vieweditProductBtn: "/edit_product",
-        viewdelteteProductBtn: "/delete_product",
+        viewdeleteProductBtn: "/delete_product",
         viewSalesBtn: "/sales",
         viewaddSaleBtn: "/add_sale",
         viewSalesReportBtn: "/sales_report",

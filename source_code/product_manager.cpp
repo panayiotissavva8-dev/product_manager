@@ -1425,7 +1425,8 @@ CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
 
 //  Compile command:
 
-/*   cd source_code
+/*
+cd source_code
 clang++ product_manager.cpp \
 -std=c++17 \
 -Iexternal/crow/include \
@@ -1439,3 +1440,18 @@ clang++ product_manager.cpp \
 
 //  Access the application at:
 // http://localhost:18080/ 
+
+
+/* 
+- Unauthorized copying of this file, via any medium is strictly prohibited
+- Proprietary and confidential
+- No warranty, express or implied, provided. In no event shall the authors be liable for any claim, 
+damages or other liability, whether in an action of contract, tort or otherwise, arising from, 
+out of or in connection with the software or the use or other dealings in the software.
+- This code is provided "as is" and is intended for educational and demonstration purposes only.
+- Any commercial use or distribution of this code without explicit permission from Northdtack Ltd is prohibited.
+- For inquiries, please contact Northdtack Ltd at northstack@gmail.com
+- Last updated: 27/02/2026
+
+Copyright (c) 2026 Northdtack Ltd. All rights reserved.
+*/
