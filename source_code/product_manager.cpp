@@ -31,6 +31,7 @@ struct Product {
 };
 
 struct sale {
+    int sale_code;
     string owner;
     int customer_id;
     string customer;
@@ -229,7 +230,7 @@ void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
     sqlite3_stmt* stmt;
 
     const char* sql =
-       "SELECT s.customer_id, c.customer, s.code, s.brand, s.name, s.quantity, s.price, s.discount, s.vat_amount, s.total_price, s.sum_price, s.cost, s.total_cost, s.date "
+       "SELECT s.sale_code, s.customer_id, c.customer, s.code, s.brand, s.name, s.quantity, s.price, s.discount, s.vat_amount, s.total_price, s.sum_price, s.cost, s.total_cost, s.date "
         "FROM sales s "
         "LEFT JOIN customers c ON s.customer_id = c.customer_id "
         "WHERE LOWER(s.owner) = LOWER(?);";
@@ -243,28 +244,30 @@ void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
 
      while (sqlite3_step(stmt) == SQLITE_ROW) {
     sale s;
+
+    s.sale_code = sqlite3_column_int(stmt, 0);
     s.owner = username;
-    s.customer_id = sqlite3_column_int(stmt, 0);
-    const unsigned char* customer_text = sqlite3_column_text(stmt, 1);
+    s.customer_id = sqlite3_column_int(stmt, 1);
+    const unsigned char* customer_text = sqlite3_column_text(stmt, 2);
     s.customer = customer_text ? reinterpret_cast<const char*>(customer_text) : "";
 
-    s.code = sqlite3_column_int(stmt, 2);
-    const unsigned char* brand_text = sqlite3_column_text(stmt, 3);
+    s.code = sqlite3_column_int(stmt, 3);
+    const unsigned char* brand_text = sqlite3_column_text(stmt, 4);
     s.brand = brand_text ? reinterpret_cast<const char*>(brand_text) : "";
 
-    const unsigned char* name_text = sqlite3_column_text(stmt, 4);
+    const unsigned char* name_text = sqlite3_column_text(stmt, 5);
     s.name = name_text ? reinterpret_cast<const char*>(name_text) : "";
 
-    s.quantity = sqlite3_column_int(stmt, 5);
-    s.price = sqlite3_column_double(stmt, 6);
-    s.discount = sqlite3_column_double(stmt, 7);
-    s.vat_amount = sqlite3_column_double(stmt, 8);
-    s.total_price = sqlite3_column_double(stmt, 9);
-    s.sum_price = sqlite3_column_double(stmt, 10);
-    s.cost = sqlite3_column_double(stmt, 11);
-    s.total_cost = sqlite3_column_double(stmt, 12);
+    s.quantity = sqlite3_column_int(stmt, 6);
+    s.price = sqlite3_column_double(stmt, 7);
+    s.discount = sqlite3_column_double(stmt, 8);
+    s.vat_amount = sqlite3_column_double(stmt, 9);
+    s.total_price = sqlite3_column_double(stmt, 10);
+    s.sum_price = sqlite3_column_double(stmt, 11);
+    s.cost = sqlite3_column_double(stmt, 12);
+    s.total_cost = sqlite3_column_double(stmt, 13);
 
-    const unsigned char* date_text = sqlite3_column_text(stmt, 13);
+    const unsigned char* date_text = sqlite3_column_text(stmt, 14);
     s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
 
     sales.push_back(s);
@@ -316,6 +319,68 @@ void saveSales(sqlite3* db, const vector<sale>& sales) {
 
     sqlite3_finalize(stmt);
 }
+
+std::optional<sale> getSale(sqlite3* db, int sale_code, const std::string& username) {
+    sale s;
+    sqlite3_stmt* stmt;
+    const char* sql =
+        "SELECT sale_code, customer_id, code, brand, name, quantity, price, discount, vat_amount, total_price, sum_price, cost, total_cost, date "
+        "FROM sales WHERE sale_code = ? AND LOWER(owner) = LOWER(?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return std::nullopt;
+
+    sqlite3_bind_int(stmt, 1, sale_code);
+    sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        s.sale_code = sqlite3_column_int(stmt, 0);
+        s.customer_id = sqlite3_column_int(stmt, 1);
+        s.code = sqlite3_column_int(stmt, 2);
+        const unsigned char* brand_text = sqlite3_column_text(stmt, 3);
+        s.brand = brand_text ? reinterpret_cast<const char*>(brand_text) : "";
+        const unsigned char* name_text = sqlite3_column_text(stmt, 4);
+        s.name = name_text ? reinterpret_cast<const char*>(name_text) : "";
+        s.quantity = sqlite3_column_int(stmt, 5);
+        s.price = sqlite3_column_double(stmt, 6);
+        s.discount = sqlite3_column_double(stmt, 7);
+        s.vat_amount = sqlite3_column_double(stmt, 8);
+        s.total_price = sqlite3_column_double(stmt, 9);
+        s.sum_price = sqlite3_column_double(stmt, 10);
+        s.cost = sqlite3_column_double(stmt, 11);
+        s.total_cost = sqlite3_column_double(stmt, 12);
+        const unsigned char* date_text = sqlite3_column_text(stmt, 13);
+        s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
+        sqlite3_finalize(stmt);
+        return s;
+    }
+
+    sqlite3_finalize(stmt);
+    return std::nullopt;
+}
+
+
+bool deleteSale(sqlite3* db, int sale_code, const std::string& username) {
+    sqlite3_stmt* stmt;
+    const char* sql = "DELETE FROM sales WHERE sale_code = ? AND LOWER(owner) = LOWER(?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare deleteSale: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_int(stmt, 1, sale_code);
+    sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool deleted = false;
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        deleted = sqlite3_changes(db) > 0;
+    }
+
+    sqlite3_finalize(stmt);
+    return deleted;
+}
+
 
 
 void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& username, int month, int year) {
@@ -768,16 +833,17 @@ cout << "SESSION USERNAME = [" << username << "]" << endl;
     int i = 0;
     for (const auto& s : sales) {
         crow::json::wvalue obj;
+        obj["sale_code"] = s.sale_code;
         obj["user"] = s.owner;
         obj["customer"] = s.customer;
         obj["code"] = s.code;
         obj["brand"] = s.brand;
         obj["name"] = s.name;
         obj["quantity"] = s.quantity;
-        obj["price"] = s.price;
+        obj["total_price"] = s.total_price;
         obj["discount"] = s.discount;
         obj["vat_amount"] = s.vat_amount;
-        obj["total_price"] = (s.price * (1 - s.discount / 100.0)) * (1 + s.vat_amount / 100.0);
+        obj["sum_price"] = s.sum_price;
         obj["date"] = s.date;
         out["sales"][i++] = std::move(obj);
     }
@@ -837,6 +903,47 @@ cout << "Reports generated: " << reports.size() << endl;
 
     return crow::response(200, out);
 });
+
+// --- GET SALES ---
+CROW_ROUTE(app, "/get_sale")
+([&db_prodexa](const crow::request& req){
+    auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+
+    std::string username = sessions[token];
+   auto sale_code_str = req.url_params.get("sale_code");
+if (!sale_code_str) {
+    sale_code_str = req.url_params.get("query"); // fallback
+}
+if (!sale_code_str) return crow::response(400, "Missing sale code");
+
+int sale_code = std::stoi(sale_code_str);
+
+    auto sale_opt = getSale(db_prodexa, sale_code, username);
+    if (!sale_opt.has_value())
+        return crow::response(404, "Sale not found");
+
+    const sale& s = sale_opt.value();
+    crow::json::wvalue res;
+    res["sale_code"] = s.sale_code;
+    res["customer_id"] = s.customer_id;
+    res["code"] = s.code;
+    res["brand"] = s.brand;
+    res["name"] = s.name;
+    res["quantity"] = s.quantity;
+    res["price"] = s.price;
+    res["discount"] = s.discount;
+    res["vat_amount"] = s.vat_amount;
+    res["total_price"] = s.total_price;
+    res["sum_price"] = s.sum_price;
+    res["cost"] = s.cost;
+    res["total_cost"] = s.total_cost;
+    res["date"] = s.date;
+
+    return crow::response(200, res);
+});
+
 
 
 CROW_ROUTE(app, "/api/users")
@@ -1075,6 +1182,19 @@ CROW_ROUTE(app, "/add_sale")([](){
     ifstream file("static/html/add_sale.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "add_sale.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+// --- DELETE SALE PAGE ---
+CROW_ROUTE(app, "/delete_sale")([](){
+    ifstream file("static/html/delete_sale.html", ios::binary);
+    if (!file.is_open())
+        return crow::response(404, "delete_sale.html not found");
 
     stringstream buffer;
     buffer << file.rdbuf();
@@ -1343,6 +1463,25 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
    return crow::response(404, "Product not found");
 });
 
+// --- DELETE SALE ---
+ CROW_ROUTE(app, "/delete_sale").methods(crow::HTTPMethod::POST)
+    ([&db_prodexa](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        if (!body.has("sale_code")) return crow::response(400, "Missing sale_code");
+         int sale_code = body["sale_code"].i();
+
+        auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+    string username = sessions[token];
+
+        if(deleteSale(db_prodexa, sale_code, username) )
+            return crow::response(200, "Deleted");
+        else
+            return crow::response(404, "Sale not found");
+    });
+
+
 
 // --- ADD CUSTOMER ---
 CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
@@ -1425,8 +1564,7 @@ CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
 
 //  Compile command:
 
-/*
-cd source_code
+/*. cd source_code
 clang++ product_manager.cpp \
 -std=c++17 \
 -Iexternal/crow/include \

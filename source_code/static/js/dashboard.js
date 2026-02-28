@@ -2,17 +2,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     const usernameSpan = document.getElementById("username");
     const roleSpan = document.getElementById("role");
     const logoutBtn = document.getElementById("logoutBtn");
+    
+    // Products Buttons
     const viewProductsBtn = document.getElementById("viewProductsBtn");
     const viewaddProductBtn = document.getElementById("viewaddProductBtn");
     const vieweditProductBtn = document.getElementById("vieweditProductBtn");
+    const viewdeleteProductBtn = document.getElementById("viewdeleteProductBtn");
+
+    // Sales Buttons
     const viewSalesBtn = document.getElementById("viewSalesBtn");
     const viewaddSaleBtn = document.getElementById("viewaddSaleBtn");
+    const viewdeleteSaleBtn = document.getElementById("viewdeleteSaleBtn");
     const viewSalesReportBtn = document.getElementById("viewSalesReportBtn");
+
+    //Users Buttons
     const viewUsersBtn = document.getElementById("viewUsersBtn");
+
+    // Customers Buttons
     const viewCustomersBtn = document.getElementById("viewCustomersBtn");
     const viewaddCustomersBtn = document.getElementById("viewaddCustomersBtn");
     const vieweditCustomersBtn = document.getElementById("vieweditCustomersBtn");
-    const viewdeleteProductBtn = document.getElementById("viewdeleteProductBtn")
+
 
     const token = localStorage.getItem("sessionToken");
     if (!token) {
@@ -48,6 +58,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     //  NAVIGATION BUTTONS
+
+    // Products Buttons
     if (viewProductsBtn) {
         viewProductsBtn.addEventListener("click", () => window.location.href = "/products");
     }
@@ -57,18 +69,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (vieweditProductBtn) {
         vieweditProductBtn.addEventListener("click", () => window.location.href = "/edit_product");
     }
+    if(viewdeleteProductBtn){
+        viewdeleteProductBtn.addEventListener("click", () => window.location.href = '/delete_product');
+    }
+
+    // Sales Buttons
     if(viewSalesBtn){
         viewSalesBtn.addEventListener("click", () => window.location.href = "/sales");
     }
     if(viewaddSaleBtn){
         viewaddSaleBtn.addEventListener("click", () => window.location.href = "/add_sale");
     }
+    if(viewdeleteSaleBtn){
+        viewdeleteSaleBtn.addEventListener("click", () => window.location.href = "/delete_sale");
+    }
     if(viewSalesReportBtn){
         viewSalesReportBtn.addEventListener("click", () => window.location.href = "/sales_report");
     }
+
+    // Users Buttons
     if(viewUsersBtn){
         viewUsersBtn.addEventListener("click", () =>  window.location.href = "/view_users");
     }
+
+    // Customers Buttons
      if(viewCustomersBtn){
         viewCustomersBtn.addEventListener("click", () =>  window.location.href = "/view_customers");
     }
@@ -78,9 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(vieweditCustomersBtn){
         vieweditCustomersBtn.addEventListener("click", () =>  window.location.href = "/edit_customers");
     }
-    if(viewdeleteProductBtn){
-        viewdeleteProductBtn.addEventListener("click", () => window.location.href = '/delete_product');
-    }
+
 
     //  LOGOUT
     if (logoutBtn) {

@@ -77,16 +77,17 @@ async function loadSales() {
     sales.forEach(p => {
     const row = document.createElement("tr");
     row.innerHTML = `
+        <td>${p.sale_code}</td>
         <td>${p.user}</td>
         <td>${p.customer}</td> <!-- show customer name -->
         <td>${p.code}</td>
         <td>${p.brand}</td>
         <td>${p.name}</td>
         <td>${p.quantity}</td>
-        <td>€${Number(p.price).toFixed(2)}</td>
+        <td>€${Number(p.total_price).toFixed(2)}</td>
         <td>${p.discount}%</td>
         <td>${p.vat_amount}%</td>
-        <td>€${Number(p.total_price).toFixed(2)}</td>
+        <td>€${Number(p.sum_price).toFixed(2)}</td>
         <td>${new Date(p.date).toLocaleString()}</td>
     `;
     salesTableBody.appendChild(row);
