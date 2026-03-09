@@ -579,6 +579,28 @@ if (changes == 0) {
 }
 
 
+bool deleteCustomer(sqlite3* db, int customer_id, const std::string& username) {
+    sqlite3_stmt* stmt;
+    const char* sql = "DELETE FROM customers WHERE customer_id = ? AND LOWER(owner) = LOWER(?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare deleteCustomer: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_int(stmt, 1, customer_id);
+    sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool deleted = false;
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        deleted = sqlite3_changes(db) > 0;
+    }
+
+    sqlite3_finalize(stmt);
+    return deleted;
+}
+
+
 
 
 
@@ -1278,6 +1300,20 @@ CROW_ROUTE(app, "/edit_customers")([](){
 
 });
 
+// --- DELETE CUSTOMER PAGE ---
+CROW_ROUTE(app, "/delete_customers")([](){
+    ifstream file("static/html/delete_customers.html", ios::binary);
+    if(!file.is_open())
+    return crow::response(404,"delete_customers.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
 
 // --- MENU BAR ---
 CROW_ROUTE(app, "/menu_bar")([](){
@@ -1539,6 +1575,24 @@ CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
     else
     return crow::response(404, "Customer not found");
 });
+
+// --- DELETE CUSTOMER ---
+CROW_ROUTE(app, "/delete_customer").methods(crow::HTTPMethod::POST)
+    ([&db_prodexa](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        if (!body.has("customer_id")) return crow::response(400, "Missing customer_id");
+         int customer_id = body["customer_id"].i();
+
+        auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+    string username = sessions[token];
+
+        if(deleteCustomer(db_prodexa, customer_id, username) )
+            return crow::response(200, "Deleted");
+        else
+            return crow::response(404, "Customer not found");
+    });
 
 
 

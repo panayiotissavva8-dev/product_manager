@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const viewCustomersBtn = document.getElementById("viewCustomersBtn");
     const viewaddCustomersBtn = document.getElementById("viewaddCustomersBtn");
     const vieweditCustomersBtn = document.getElementById("vieweditCustomersBtn");
+    const viewdeleteCustomersBtn = document.getElementById("viewdeleteCustomersBtn");
 
 
     const token = localStorage.getItem("sessionToken");
@@ -101,6 +102,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if(vieweditCustomersBtn){
         vieweditCustomersBtn.addEventListener("click", () =>  window.location.href = "/edit_customers");
+    }
+    if(viewdeleteCustomersBtn){
+        viewdeleteCustomersBtn.addEventListener("click", () =>  window.location.href = "/delete_customers");
     }
 
 

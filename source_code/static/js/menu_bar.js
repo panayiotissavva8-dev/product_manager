@@ -27,7 +27,8 @@ document.addEventListener("click", e => {
         // Customer routes
         viewCustomersBtn: "/view_customers",
         viewaddCustomerBtn: "/add_customers",
-        vieweditCustomerBtn: "edit_customers"
+        vieweditCustomerBtn: "/edit_customers",
+        viewdeleteCustomersBtn: "/delete_customers"
     };
 
     if (routes[e.target.id]) {
