@@ -60,6 +60,7 @@ struct SalesReport {
 };
 
 struct UsersData {
+    int user_id;
     string owner;
     string username;
     string role;
@@ -426,7 +427,7 @@ void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& use
 
 void loadUsers(sqlite3* db, vector<UsersData>& Users, const string& username){
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT username, role FROM users "
+    const char* sql = "SELECT user_id, username, role FROM users "
                       "WHERE LOWER(owner) = LOWER(?);";
 
     if(sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK){
@@ -440,17 +441,39 @@ void loadUsers(sqlite3* db, vector<UsersData>& Users, const string& username){
         UsersData u;
         u.owner = username;
         const unsigned char* textVal;
-
-        textVal = sqlite3_column_text(stmt, 0);
-        u.username = textVal ? reinterpret_cast<const char*>(textVal) : "";
+        u.user_id = sqlite3_column_int(stmt, 0);
 
         textVal = sqlite3_column_text(stmt, 1);
+        u.username = textVal ? reinterpret_cast<const char*>(textVal) : "";
+
+        textVal = sqlite3_column_text(stmt, 2);
         u.role = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
         Users.push_back(u);
     }
 
     sqlite3_finalize(stmt);
+}
+
+bool deleteUser(sqlite3* db, int user_id, const std::string& username) {
+    sqlite3_stmt* stmt;
+    const char* sql = "DELETE FROM users WHERE user_id = ? AND LOWER(owner) = LOWER(?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare deleteUser: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_int(stmt, 1, user_id);
+    sqlite3_bind_text(stmt, 2, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool deleted = false;
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        deleted = sqlite3_changes(db) > 0;
+    }
+
+    sqlite3_finalize(stmt);
+    return deleted;
 }
 
 
@@ -702,6 +725,84 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
         sqlite3_finalize(stmt);
         return crow::response(200, "Registered");
     });
+
+    // --- ADD SUB-USER API ---
+    CROW_ROUTE(app, "/add_sub_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        if (!body) return crow::response(400);
+
+        auto token = req.get_header_value("Authorization");
+        if (token.empty() || sessions.find(token) == sessions.end())
+             return crow::response(401, "Not logged in");
+
+        string username = sessions[token];
+        
+        string sub_username = body["username"].s();
+        string password = body["password"].s();
+        string role = body["role"].s();
+        bool termsAccepted = body["termsAccepted"].b();
+        string hashed = hashPassword(password);
+        time_t terms_accepted_at = time(nullptr);
+
+         if (!termsAccepted) {
+            return crow::response(400, "Terms must be accepted");
+        }
+        sqlite3_stmt* stmt;
+        const char* sql = "INSERT INTO users (owner, username, password_hash, role, termsAccepted, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?);";
+        if (sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr) != SQLITE_OK)
+            return crow::response(500);
+
+        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, sub_username.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, hashed.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, role.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 5, termsAccepted ? 1 : 0);
+        sqlite3_bind_int64(stmt, 6, static_cast<sqlite3_int64>(terms_accepted_at));
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) return crow::response(409, "User exists");
+
+        sqlite3_finalize(stmt);
+        return crow::response(200, "Registered");
+    });
+
+    // --- GET SUB-USERS API ---
+    CROW_ROUTE(app, "/get_users")
+([&db_prodexa](const crow::request& req){
+    auto query_param = req.url_params.get("query");
+    if (!query_param) return crow::response(400, "Missing query");
+
+    string query = query_param;
+
+    auto token = req.get_header_value("Authorization");
+if (token.empty() || sessions.find(token) == sessions.end())
+    return crow::response(401, "Not logged in");
+
+string username = sessions[token];
+vector<UsersData> Users;
+Users.clear();
+
+loadUsers(db_prodexa, Users, username);
+
+
+    for (const auto& u : Users) {
+       string name_lower = u.username;
+       string query_lower = query;
+
+    transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+    transform(query_lower.begin(), query_lower.end(), query_lower.begin(), ::tolower);
+
+if (name_lower.find(query_lower) != string::npos) {
+            crow::json::wvalue res;
+            res["user_id"] = u.user_id;
+            res["username"] = u.username;
+            res["role"] = u.role;
+            return crow::response(200, res);
+        }
+    }
+
+    return crow::response(404, "User not found");
+});
+
 
    // --- LOG OUT API ---
 CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([](const crow::request& req){
@@ -988,7 +1089,6 @@ CROW_ROUTE(app, "/api/users")
         crow::json::wvalue obj;
         obj["username"] = u.username;
         obj["role"] = u.role;
-        obj["owner"] = u.owner;
         tempList.push_back(std::move(obj));
     }
 
@@ -1246,6 +1346,34 @@ CROW_ROUTE(app, "/view_users")([](){
     ifstream file("static/html/view_users.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"view_users.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
+// --- ADD USER PAGE ---
+CROW_ROUTE(app, "/add_users")([](){
+    ifstream file("static/html/add_users.html", ios::binary);
+    if(!file.is_open())
+    return crow::response(404,"add_users.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
+// ---- DELETE USER PAGE ---
+CROW_ROUTE(app, "/delete_users")([](){
+    ifstream file("static/html/delete_users.html", ios::binary);
+    if(!file.is_open())
+    return crow::response(404,"delete_users.html not found");
 
     stringstream buffer;
     buffer << file.rdbuf();
@@ -1517,6 +1645,24 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
             return crow::response(404, "Sale not found");
     });
 
+// --- DELETE USER ---
+CROW_ROUTE(app, "/delete_user").methods(crow::HTTPMethod::POST)
+    ([&db_prodexa](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        if (!body.has("user_id")) return crow::response(400, "Missing user_id");
+         int user_id = body["user_id"].i();
+
+        auto token = req.get_header_value("Authorization");
+    if (token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+    string username = sessions[token];
+
+        if(deleteUser(db_prodexa, user_id, username) )
+            return crow::response(200, "Deleted");
+        else
+            return crow::response(404, "User not found");
+    });
+
 
 
 // --- ADD CUSTOMER ---
@@ -1633,7 +1779,9 @@ clang++ product_manager.cpp \
 //  Access the application at:
 // http://localhost:18080/ 
 
+// --- END IGNORE ---
 
+// --- LEGAL NOTICE ---
 /* 
 - Unauthorized copying of this file, via any medium is strictly prohibited
 - Proprietary and confidential

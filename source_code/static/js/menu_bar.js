@@ -23,6 +23,9 @@ document.addEventListener("click", e => {
 
         // User routes
         viewUsersBtn: "/view_users",
+        viewaddUserBtn: "/add_users",
+        viewdeleteUserBtn: "/delete_users",
+        viewUseractivityBtn: "/user_activity",
 
         // Customer routes
         viewCustomersBtn: "/view_customers",

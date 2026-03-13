@@ -17,6 +17,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     //Users Buttons
     const viewUsersBtn = document.getElementById("viewUsersBtn");
+    const viewaddUsersBtn = document.getElementById("viewaddUsersBtn");
+    const vieweditUsersBtn = document.getElementById("vieweditUsersBtn");
+    const viewdeleteUsersBtn = document.getElementById("viewdeleteUsersBtn");
 
     // Customers Buttons
     const viewCustomersBtn = document.getElementById("viewCustomersBtn");
@@ -91,6 +94,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Users Buttons
     if(viewUsersBtn){
         viewUsersBtn.addEventListener("click", () =>  window.location.href = "/view_users");
+    }
+    if(viewaddUsersBtn){
+        viewaddUsersBtn.addEventListener("click", () =>  window.location.href = "/add_users");
+    }
+    if(vieweditUsersBtn){
+        vieweditUsersBtn.addEventListener("click", () =>  window.location.href = "/edit_users");
+    }
+    if(viewdeleteUsersBtn){
+        viewdeleteUsersBtn.addEventListener("click", () =>  window.location.href = "/delete_users");
     }
 
     // Customers Buttons
