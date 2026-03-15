@@ -66,6 +66,15 @@ struct UsersData {
     string role;
 };
 
+struct AuditData {
+    int audit_id;
+    int user_id;
+    string owner;
+    string username;
+    string role;
+    string timestamp;
+};
+
 struct CustomerData{
     string owner;
     int customer_id;
@@ -93,6 +102,9 @@ std::string getCurrentDateTime() {
 
 
 // --- DATABASE FUNCTIONS ---
+
+// --- PRODUCT FUNCTIONS ---
+
 void loadProducts(sqlite3* db, vector<Product>& products, const string& username) {
     sqlite3_stmt* stmt;
     const char* sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount, vat_amount, price_discount, total_price FROM products WHERE owner = ?;";
@@ -225,6 +237,8 @@ string hashPassword(const std::string& password) {
     return ss.str();
 }
 
+
+// --- SALES FUNCTIONS ---
 
 void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
     sales.clear();
@@ -425,6 +439,9 @@ void salesReportGen(sqlite3* db, vector<SalesReport>& reports, const string& use
     sqlite3_finalize(stmt);
 }
 
+
+// --- USER FUNCTIONS ---
+
 void loadUsers(sqlite3* db, vector<UsersData>& Users, const string& username){
     sqlite3_stmt* stmt;
     const char* sql = "SELECT user_id, username, role FROM users "
@@ -476,6 +493,74 @@ bool deleteUser(sqlite3* db, int user_id, const std::string& username) {
     return deleted;
 }
 
+void userAudit(sqlite3* db, int user_id, string owner, const std::string& username){
+    sqlite3_stmt* stmt;
+    const char* sql = "INSERT INTO audit (owner, user_id, timestamp) VALUES (?, ?, ?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare userAudit stmt: " << sqlite3_errmsg(db) << std::endl;
+        return;
+    }
+    string timestamp = getCurrentDateTime();
+
+    sqlite3_bind_text(stmt, 1, owner.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, user_id);
+    sqlite3_bind_text(stmt, 3, timestamp.c_str(), -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::cerr << "Failed to insert user audit record: " << sqlite3_errmsg(db) << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+void loadUserAudit(sqlite3* db, std::vector<AuditData>& audits, const std::string& owner)
+{
+    audits.clear();
+    sqlite3_stmt* stmt;
+
+    const char* sql = R"(
+        SELECT a.audit_id, u.username, u.role, a.timestamp
+        FROM audit a
+        JOIN users u ON a.user_id = u.user_id
+        WHERE u.owner = ?
+        ORDER BY a.audit_id DESC
+    )";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return;
+    }
+
+    // Bind the owner parameter
+    if (sqlite3_bind_text(stmt, 1, owner.c_str(), -1, SQLITE_TRANSIENT) != SQLITE_OK) {
+        std::cerr << "Failed to bind owner: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        AuditData a;
+        a.audit_id = sqlite3_column_int(stmt, 0);
+
+        const unsigned char* uname = sqlite3_column_text(stmt, 1);
+        a.username = uname ? reinterpret_cast<const char*>(uname) : "";
+
+        const unsigned char* role = sqlite3_column_text(stmt, 2);
+        a.role = role ? reinterpret_cast<const char*>(role) : "";
+
+        const unsigned char* ts = sqlite3_column_text(stmt, 3);
+        a.timestamp = ts ? reinterpret_cast<const char*>(ts) : "";
+
+        audits.push_back(std::move(a));
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+
+// --- CUSTOMER FUNCTIONS ---
 
 void loadCustomers(sqlite3* db, vector<CustomerData>& Customers, const string& username){
     sqlite3_stmt* stmt;
@@ -664,13 +749,15 @@ int main() {
     std::string input_hash = hashPassword(password);
 
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT password_hash, role FROM users WHERE username = ?;";
+    const char* sql = "SELECT user_id, owner, password_hash, role FROM users WHERE username = ?;";
     sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
-        std::string db_hash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-        std::string role = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        int user_id = sqlite3_column_int(stmt, 0);
+        std::string owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        std::string db_hash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        std::string role = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
 
         if (db_hash == input_hash) {
             // generate simple session token
@@ -682,7 +769,10 @@ int main() {
             res["username"] = username;
             res["role"] = role;
             res["token"] = token;  // send token to frontend
-            sqlite3_finalize(stmt);
+
+            userAudit(db_prodexa, user_id, owner, username);
+
+             sqlite3_finalize(stmt);
             return crow::response(200, res);
         }
     }
@@ -764,6 +854,7 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
         sqlite3_finalize(stmt);
         return crow::response(200, "Registered");
     });
+    
 
     // --- GET SUB-USERS API ---
     CROW_ROUTE(app, "/get_users")
@@ -805,12 +896,35 @@ if (name_lower.find(query_lower) != string::npos) {
 
 
    // --- LOG OUT API ---
-CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([](const crow::request& req){
+CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([&db_prodexa](const crow::request& req){
+
     auto token = req.get_header_value("Authorization");
 
-    if (!token.empty() && sessions.find(token) != sessions.end()) {
-        sessions.erase(token);
-    }
+    auto it = sessions.find(token);
+    if(it == sessions.end())
+        return crow::response(401, "Not logged in");
+
+         std::string username = it->second;
+
+    sqlite3_stmt* stmt;
+    const char* sql = "SELECT user_id, owner FROM users WHERE username = ?;";
+
+   if (sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return crow::response(500, "Database error");
+
+    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+
+        int user_id = sqlite3_column_int(stmt, 0);
+
+        std::string owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+
+         userAudit(db_prodexa, user_id, owner, username);
+    } 
+
+     sqlite3_finalize(stmt);
+     sessions.erase(it);
 
     crow::json::wvalue res;
     res["status"] = "success";
@@ -843,6 +957,37 @@ CROW_ROUTE(app, "/current_user")([&db_prodexa](const crow::request& req){
     res["username"] = username;
     res["role"] = role;
     return crow::response(200, res);
+});
+
+
+
+// ---- USER AUDIT API ---
+CROW_ROUTE(app, "/api/audit_users")
+([&db_prodexa](const crow::request& req){
+    auto token = req.get_header_value("Authorization");
+    if(token.empty() || sessions.find(token) == sessions.end())
+        return crow::response(401, "Not logged in");
+
+    std::string owner = sessions[token]; // logged-in username as owner
+
+    std::vector<AuditData> audits;
+    loadUserAudit(db_prodexa, audits, owner);
+
+    crow::json::wvalue out;
+    out["Users"] = crow::json::wvalue::list();
+
+    std::vector<crow::json::wvalue> tempList;
+    for (const auto& a : audits) {
+        crow::json::wvalue obj;
+        obj["audit_id"] = a.audit_id;
+        obj["username"] = a.username;
+        obj["role"] = a.role;
+        obj["timestamp"] = a.timestamp;
+        tempList.push_back(std::move(obj));
+    }
+
+    out["Users"] = std::move(tempList);
+    return crow::response(200, out);
 });
 
 
@@ -1382,6 +1527,21 @@ CROW_ROUTE(app, "/delete_users")([](){
     return res;
 
 });
+
+// --- USER AUDIT PAGE ---
+CROW_ROUTE(app, "/view_audit_users")([](){
+    ifstream file("static/html/view_audit_users.html", ios::binary);
+    if(!file.is_open())
+    return crow::response(404,"view_audit_users.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+
+});
+
 
 // --- CUSTOMERS PAGE ---
 
