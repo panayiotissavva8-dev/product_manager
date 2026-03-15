@@ -1,0 +1,128 @@
+.customer-form {
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 12px;
+    max-width: 500px;
+    margin: 0 auto 40px auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dashboard-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 40px;
+    color: #fff;
+}
+
+.customer-form label {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.customer-form input {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: #121212;
+    color: #fff;
+    font-size: 14px;
+}
+
+.customer-form input:focus {
+    outline: 2px solid #6c7bff;
+}
+
+.submit-btn {
+    background: #6c7bff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background: #5665e0;
+}
+
+/* Top buttons: back left, logout right */
+.top-buttons {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.top-buttons button {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.top-buttons .back-btn {
+    background: #3b82f6;
+    color: white;
+}
+
+.top-buttons .logout-btn {
+    background: #ef4444;
+    color: white;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* Base number input style  */
+.customer-form input[type=number] {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: #121212;
+    color: #fff;
+    font-size: 14px;
+    -moz-appearance: textfield; 
+    position: relative;
+}
+
+/* Chrome, Safari, Edge, Opera */
+.customer-form input[type=number]::-webkit-inner-spin-button,
+.customer-form input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    background-color: #ffffff; /* white arrows */
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Optional: add hover effect */
+.customer-form input[type=number]::-webkit-inner-spin-button:hover,
+.customer-form input[type=number]::-webkit-outer-spin-button:hover {
+    background-color: #f3f3f3;
+}
+
+/* Add custom arrow symbols using pseudo-elements for Firefox */
+.customer-form input[type=number] {
+    position: relative;
+}
+
+.customer-form input[type=number]::-moz-number-spin-box {
+    background-color: #ffffff; /* Firefox white background for spinner */
+    border-radius: 4px;
+}

@@ -723,6 +723,7 @@ bool deleteCustomer(sqlite3* db, int customer_id, const std::string& username) {
 
 int main() {
     // --- DATABASES ---
+    sqlite3* db_prodexa;
 
    int rc = sqlite3_open(DB_PATH.c_str(), &db_prodexa);
 if(rc) {
@@ -743,13 +744,11 @@ if(rc) {
 
     crow::SimpleApp app;
 
-CROW_ROUTE(app, "/")([]{
-    std::ifstream file("source_code/static/html/index.html");
-    if (!file.is_open()) return crow::response(404);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return crow::response(buffer.str());
-});
+    // Serve HTML, CSS, JS from source_code/static
+app.mount_static("/", "./source_code/static/html");    // /index.html etc.
+app.mount_static("/css", "./source_code/static/css");  // /css/landing.css etc.
+app.mount_static("/js", "./source_code/static/js");    // /js/... files
+
 
     // --- LOGIN API ---
     CROW_ROUTE(app, "/login").methods(crow::HTTPMethod::POST)([](const crow::request& req){
@@ -757,7 +756,6 @@ CROW_ROUTE(app, "/")([]{
     if (!body) return crow::response(400);
 
     std::string username = body["username"].s();
-
     std::string password = body["password"].s();
     std::string input_hash = hashPassword(password);
 
@@ -817,7 +815,7 @@ CROW_ROUTE(app, "/me").methods(crow::HTTPMethod::GET)([](const crow::request& re
 
 
    // --- REGISTER API ---
-CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([](const crow::request& req){
+CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
         
@@ -858,7 +856,7 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([](const crow::requ
     });
 
     // --- ADD SUB-USER API ---
-    CROW_ROUTE(app, "/add_sub_user").methods(crow::HTTPMethod::POST)([](const crow::request& req){
+    CROW_ROUTE(app, "/add_sub_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
 
@@ -905,7 +903,8 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([](const crow::requ
     
 
     // --- GET SUB-USERS API ---
-    CROW_ROUTE(app, "/get_users")([](const crow::request& req){
+    CROW_ROUTE(app, "/get_users")
+([&db_prodexa](const crow::request& req){
     auto query_param = req.url_params.get("query");
     if (!query_param) return crow::response(400, "Missing query");
 
@@ -943,7 +942,7 @@ if (name_lower.find(query_lower) != string::npos) {
 
 
    // --- LOG OUT API ---
-CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([](const crow::request& req){
+CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([&db_prodexa](const crow::request& req){
 
     auto token = req.get_header_value("Authorization");
 
@@ -982,7 +981,7 @@ CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([](const crow::reques
 
 
     // --- CURRENT USER API ---
-CROW_ROUTE(app, "/current_user")([](const crow::request& req){
+CROW_ROUTE(app, "/current_user")([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
@@ -1010,7 +1009,8 @@ CROW_ROUTE(app, "/current_user")([](const crow::request& req){
 
 
 // ---- USER AUDIT API ---
-CROW_ROUTE(app, "/api/audit_users")([](const crow::request& req){
+CROW_ROUTE(app, "/api/audit_users")
+([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
     if(token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
@@ -1044,7 +1044,7 @@ CROW_ROUTE(app, "/api/audit_users")([](const crow::request& req){
 
   // --- PRODUCTS DATA API ---
 CROW_ROUTE(app, "/api/products")
-([&products](const crow::request& req){
+([&products, &db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
@@ -1082,7 +1082,7 @@ loadProducts(db_prodexa, products, username);
 
     // --- GET PRODUCT API ---
 CROW_ROUTE(app, "/get_product")
-([&products](const crow::request& req){
+([&products, &db_prodexa](const crow::request& req){
     auto query_param = req.url_params.get("query");
     if (!query_param) return crow::response(400, "Missing query");
 
@@ -1129,7 +1129,7 @@ loadProducts(db_prodexa, products, username);
 
 // --- Sales Data API ---
 CROW_ROUTE(app, "/api/sales")
-([](const crow::request& req){
+([ &db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
@@ -1172,7 +1172,7 @@ cout << "SESSION USERNAME = [" << username << "]" << endl;
 });
 
 CROW_ROUTE(app, "/api/sales_report")
-([](const crow::request& req){
+([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
@@ -1227,7 +1227,7 @@ cout << "Reports generated: " << reports.size() << endl;
 
 // --- GET SALES ---
 CROW_ROUTE(app, "/get_sale")
-([](const crow::request& req){
+([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
@@ -1269,7 +1269,7 @@ int sale_code = std::stoi(sale_code_str);
 
 
 CROW_ROUTE(app, "/api/users")
-([](const crow::request& req){
+([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
     if(token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
@@ -1300,7 +1300,7 @@ CROW_ROUTE(app, "/api/users")
 
 // --- DISPLAY CUSTOMERS ---
 CROW_ROUTE(app, "/api/customers")
-([](const crow::request& req){
+([&db_prodexa](const crow::request& req){
     auto token = req.get_header_value("Authorization");
 if(token.empty() || sessions.find(token) == sessions.end())
    return crow::response(401,"Not logged in");
@@ -1339,7 +1339,7 @@ out["Customers"] = std::move(tempCustomers);
 
 // --- GET CUSTOMER INFO ---
 CROW_ROUTE(app, "/get_customers")
-([&Customers](const crow::request& req){
+([&Customers, &db_prodexa](const crow::request& req){
     auto query_param = req.url_params.get("query");
     if (!query_param) return crow::response(400, "Missing query");
 
@@ -1381,6 +1381,19 @@ if (name_lower.find(query_lower) != string::npos) {
 });
 
 
+   string static_folder = "static/";
+
+// --- ROOT LANDING PAGE ---
+   CROW_ROUTE(app, "/")([](){
+        ifstream file("static/html/landing.html", ios::binary);
+        if(!file.is_open()) return crow::response(404, "Cannot open landing.html");
+
+        stringstream buffer;
+        buffer << file.rdbuf();
+        crow::response res(buffer.str());
+        res.add_header("Content-Type", "text/html");
+        return res;
+    });
 
     // --- LOGIN PAGE ---
     CROW_ROUTE(app, "/login")([](){
@@ -1675,38 +1688,28 @@ CROW_ROUTE(app, "/menu_bar")([](){
 });
 
     // --- STATIC FILES ---
-app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string path){
-    std::string full_path = "static/" + path; // folder where your files live
+    app.route_dynamic("/<path>")([&](const crow::request& req, string path){
+        ifstream file(static_folder + path, ios::binary);
+        if(!file.is_open()) return crow::response(404, "File not found: " + path);
 
-    std::ifstream file(full_path, std::ios::binary);
-    if (!file) return crow::response(404, "File not found");
+        stringstream buffer;
+        buffer << file.rdbuf();
+        crow::response res(buffer.str());
 
-    std::ostringstream contents;
-    contents << file.rdbuf();
+        if (path.size() >= 4 && path.substr(path.size()-4) == ".css") res.add_header("Content-Type", "text/css");
+        else if (path.size() >= 3 && path.substr(path.size()-3) == ".js") res.add_header("Content-Type", "application/javascript");
+        else if (path.size() >= 4 && path.substr(path.size()-4) == ".png") res.add_header("Content-Type", "image/png");
+        else if (path.size() >= 4 && (path.substr(path.size()-4) == ".jpg" || path.substr(path.size()-5) == ".jpeg")) res.add_header("Content-Type", "image/jpeg");
+        else if (path.size() >= 5 && path.substr(path.size()-5) == ".html") res.add_header("Content-Type", "text/html");
+        else res.add_header("Content-Type", "application/octet-stream");
 
-    crow::response res(contents.str());
-
-    // Determine MIME type (we’ll fix the ends_with issue next)
-    std::string mime_type = "application/octet-stream";
-    size_t dot_pos = path.rfind('.');
-    if (dot_pos != std::string::npos) {
-        std::string ext = path.substr(dot_pos);
-        if (ext == ".html") mime_type = "text/html";
-        else if (ext == ".css") mime_type = "text/css";
-        else if (ext == ".js") mime_type = "application/javascript";
-        else if (ext == ".png") mime_type = "image/png";
-        else if (ext == ".jpg" || ext == ".jpeg") mime_type = "image/jpeg";
-        else if (ext == ".gif") mime_type = "image/gif";
-    }
-    res.add_header("Content-Type", mime_type);
-
-    return res;
-});
+        return res;
+    });
 
 
    // --- ADD PRODUCT ---
     CROW_ROUTE(app, "/add_product").methods(crow::HTTPMethod::POST)
-    ([&products](const crow::request& req){
+    ([&products, &db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
 
@@ -1747,7 +1750,7 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
 
    // --- UPDATE PRODUCT ---
     CROW_ROUTE(app, "/update_product").methods(crow::HTTPMethod::POST)
-    ([&products](const crow::request& req){
+    ([&products, &db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
 
@@ -1765,7 +1768,7 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
 
    // --- DELETE PRODUCT ---
     CROW_ROUTE(app, "/delete_product").methods(crow::HTTPMethod::POST)
-    ([&products](const crow::request& req){
+    ([&products, &db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
 
@@ -1785,7 +1788,7 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
 
   // --- ADD SALE ---
    CROW_ROUTE(app, "/add_sale").methods(crow::HTTPMethod::POST)
-   ([&products](const crow::request& req) {
+   ([&db_prodexa,&products](const crow::request& req) {
 
     auto body = crow::json::load(req.body);
     if (!body) return crow::response(400);
@@ -1860,7 +1863,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 // --- DELETE SALE ---
  CROW_ROUTE(app, "/delete_sale").methods(crow::HTTPMethod::POST)
-    ([](const crow::request& req){
+    ([&db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body.has("sale_code")) return crow::response(400, "Missing sale_code");
          int sale_code = body["sale_code"].i();
@@ -1879,7 +1882,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 // --- DELETE USER ---
 CROW_ROUTE(app, "/delete_user").methods(crow::HTTPMethod::POST)
-    ([](const crow::request& req){
+    ([&db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body.has("user_id")) return crow::response(400, "Missing user_id");
          int user_id = body["user_id"].i();
@@ -1900,7 +1903,7 @@ CROW_ROUTE(app, "/delete_user").methods(crow::HTTPMethod::POST)
 
 // --- ADD CUSTOMER ---
 CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
-([&Customers](const crow::request& req){
+([&Customers, &db_prodexa](const crow::request& req){
 
     auto body = crow::json::load(req.body);
     if (!body) return crow::response(400);
@@ -1938,7 +1941,7 @@ CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
 
 // --- UPDATE CUSTOMER ---
 CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
-([](const crow::request& req){
+([&db_prodexa](const crow::request& req){
     auto body = crow::json::load(req.body);
     if (!body) return crow::response(400);
 
@@ -1959,7 +1962,7 @@ CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
 
 // --- DELETE CUSTOMER ---
 CROW_ROUTE(app, "/delete_customer").methods(crow::HTTPMethod::POST)
-    ([](const crow::request& req){
+    ([&db_prodexa](const crow::request& req){
         auto body = crow::json::load(req.body);
         if (!body.has("customer_id")) return crow::response(400, "Missing customer_id");
          int customer_id = body["customer_id"].i();

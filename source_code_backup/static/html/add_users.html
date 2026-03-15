@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prodexa - Add Users</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/add_users.css">
+    <script type="module" src="/js/add_users.js" defer></script>
+       <link rel="stylesheet" href="/css/menu_bar.css">
+     <script src="/js/menu_bar.js" defer></script>
+     <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const backBtn = document.getElementById("backBtn");
+    const role = localStorage.getItem("role"); // role stored at login
+
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            if (role === "Employee") {
+                window.location.href = "/employee_dashboard";
+            } else if (role === "Manager") {
+                window.location.href = "/dashboard";
+            } else {
+                window.location.href = "/"; // fallback
+            }
+        });
+    }
+});
+</script>
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <!-- Top buttons: Back left, Logout right -->
+    <div class="top-buttons">
+        <button class="back-btn" id="backBtn">Back</button>
+        <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
+    </div>
+
+    <h1 class="dashboard-title">Add User</h1>
+
+    <!-- Form -->
+    <form id="addUserForm" class="user-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="role">Role</label>
+        <select id="role" name="role" required>
+            <option value="" disabled selected>Select role</option>
+            <option value="Manager">Manager</option>
+            <option value="Employee">Employee</option>
+        </select>
+
+        <label for="termsAccepted" class="terms">
+            <input type="checkbox" id="termsAccepted" name="termsAccepted" required>
+            <a href="/html/terms.html" target="_blank">I agree to the Terms and Conditions</a>
+        </label>
+
+        <button type="submit" class="submit-btn">Add User</button>
+    </form>
+
+     <!---Footer--->
+        <div class="footer">
+            &copy; 2026 Northstack Ltd. All rights reserved.
+        </div>
+
+</div>
+
+</body>
+</html>

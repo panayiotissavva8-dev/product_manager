@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report</title>
+    <link rel="stylesheet" href="/css/sales_report.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script src="/js/sales_report.js" defer></script>
+     <script src="/js/menu_bar.js" defer></script>
+    <script type="module" src="/js/view_products.js" defer></script>
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const backBtn = document.getElementById("backBtn");
+    const role = localStorage.getItem("role"); // role stored at login
+
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            if (role === "Employee") {
+                window.location.href = "/employee_dashboard";
+            } else if (role === "Manager") {
+                window.location.href = "/dashboard";
+            } else {
+                window.location.href = "/"; // fallback
+            }
+        });
+    }
+});
+</script>
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <!-- Top navigation -->
+    <div class="top-buttons">
+        <button class="back-btn" id="backBtn">Back</button>
+        <button class="logout-btn" id="logoutBtn" type="submit">Logout</button>
+    </div>
+
+     <h1 class="dashboard-title">Sales Report</h1>
+
+    <!-- Sales report card -->
+    <div class="sales-container">
+
+        <!-- subtitle -->
+
+        <div class="sales-header">
+            <h2>Select Month To View Sales</h2>
+        </div>
+
+
+        <!-- Search / filter area -->
+        <div class="sales-search">
+                <label for="month">Month</label>
+                <select id="month" name="month">
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+
+                <label for="year">Year</label>
+                <select id="year" name="year">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+        </div>
+
+        <!-- Data output -->
+        <main>
+            <section id="sales-data">
+                <!-- Sales table or calendar injected here -->
+                  <table class="sales-table" id="salesTable">
+                    <thead>
+                        <tr>
+                        <th>Month</th>
+                        <th>Monthly Sales</th>
+                        <th>Monthly Units Sold</th>
+                        <th>Monthly Revenue (€)</th>
+                        <th>Monthly Cost (€)</th>
+                        <th>VAT Amount (%)</th>
+                        <th>Monthly Profit (€)</th>
+                    </tr>
+                 </thead>
+                 <tbody>
+                <!-- JS will populate rows here -->
+                </tbody>
+            </table>
+            </section>
+        </main>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="dashboard-footer">
+        &copy; 2026 Northstack Ltd. All rights reserved.
+    </div>
+
+</div>
+
+</body>
+</html>

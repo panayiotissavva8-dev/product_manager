@@ -1,0 +1,177 @@
+/* ===== Reset ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ===== Background ===== */
+body {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #4a90e2, #50e3c2);
+}
+
+/* ===== Card Container ===== */
+.auth-container {
+    width: 360px;
+    max-width: 90%;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+/* ===== Logo ===== */
+.logo img {
+    width: 100px;
+    margin-bottom: 16px;
+}
+
+/* ===== Title ===== */
+h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 20px;
+}
+
+/* ===== Labels ===== */
+label {
+    display: block;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 6px;
+}
+
+/* ===== Inputs ===== */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    margin-bottom: 16px;
+}
+
+/* ===== Focus ===== */
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.25);
+}
+
+/* ===== Buttons ===== */
+input[type="submit"] {
+    width: 100%;
+    padding: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    transition: background-color 0.2s ease;
+}
+
+/* Register button */
+#registerBtn {
+    background-color: #4a90e2;
+}
+
+#registerBtn:hover {
+    background-color: #3b7fd1;
+}
+
+/* Back to login button */
+#loginBtn {
+    margin-top: 8px;
+    background-color: #50e3c2;
+}
+
+#loginBtn:hover {
+    background-color: #3fc6a8;
+}
+
+/* ===== Contact ===== */
+address {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #777;
+    font-style: normal;
+}
+
+address a {
+    color: #4a90e2;
+    text-decoration: none;
+}
+
+address a:hover {
+    text-decoration: underline;
+}
+
+input[type="button"] {
+    width: 100%;
+    padding: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    transition: background-color 0.2s ease;
+}
+
+
+/* ===== Mobile ===== */
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 28px 22px;
+    }
+
+    .logo img {
+        width: 90px;
+    }
+}
+
+
+.terms-check {
+    margin-top: 18px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.terms-check label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.terms-check input {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+}
+
+.terms-check a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.terms-check a:hover {
+    text-decoration: underline;
+}
+
+

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prodexa - Delete User</title>
+
+    <link rel="stylesheet" href="/css/delete_users.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script src="/js/delete_users.js" defer></script>
+       <link rel="stylesheet" href="/css/menu_bar.css">
+     <script src="/js/menu_bar.js" defer></script>
+     <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const backBtn = document.getElementById("backBtn");
+    const role = localStorage.getItem("role"); // role stored at login
+
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            if (role === "Employee") {
+                window.location.href = "/employee_dashboard";
+            } else if (role === "Manager") {
+                window.location.href = "/dashboard";
+            } else {
+                window.location.href = "/"; // fallback
+            }
+        });
+    }
+});
+</script>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div class="delete-card">
+
+            <button id="backBtn" class="corner-btn left">Back</button>
+        <button id="logoutBtn" class="corner-btn right danger">Logout</button>
+
+        <h1>Delete User</h1>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search by username">
+            <button id="searchBtn">Search</button>
+        </div>
+
+        <div id="userForm" class="user-form hidden">
+
+            <div class="field">
+                <label>Username</label>
+                <input type="text" id="username" disabled>
+            </div>
+
+            <div class="field">
+                <label>Role</label>
+                <input type="text" id="role" disabled>
+            </div>
+
+            <button id="deleteBtn" class="delete-btn">Delete User</button>
+
+            <div>
+                 <!---Footer--->
+        <div class="dashboard-footer">
+            &copy; 2026 Northstack Ltd. All rights reserved.
+        </div>
+            </div>
+
+             
+</div>
+
+</body>
+</html>
