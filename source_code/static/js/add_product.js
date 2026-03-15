@@ -1,6 +1,8 @@
 const logoutBtn = document.getElementById("logoutBtn");
 const addProductForm = document.getElementById("addProductForm");
 
+ localStorage.setItem("sessionToken", data.token);
+
 // --- Logout ---
 logoutBtn.addEventListener("click", async () => {
     const token = localStorage.getItem("sessionToken");

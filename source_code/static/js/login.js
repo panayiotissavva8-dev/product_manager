@@ -15,15 +15,21 @@ signBtn.addEventListener("click", async () => {
         });
 
         if (response.ok) {
-            const data = await response.json();
-            // ✅ store the session token!
-            localStorage.setItem("sessionToken", data.token);
-            alert(`Welcome ${data.username}! Role: ${data.role}`);
-            window.location.href = "/dashboard";
-        } else {
-            const text = await response.text();
-            alert("Login failed: " + text);
-        }
+    const data = await response.json();
+    localStorage.setItem("sessionToken", data.token);
+    localStorage.setItem("role", data.role);
+
+    if (data.role === "Employee") {
+        alert(`Welcome ${data.username}! Role: ${data.role}`);
+        window.location.href = "/employee_dashboard";
+    } else {
+        alert(`Welcome ${data.username}! Role: ${data.role}`);
+        window.location.href = "/dashboard";
+    }
+} else {
+    const text = await response.text();
+    alert("Login failed: " + text);
+}
     } catch (err) {
         console.error("Login error:", err);
         alert("Failed to connect to server");

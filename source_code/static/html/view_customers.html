@@ -9,12 +9,30 @@
     <script type="module" src="/js/view_customers.js" defer></script>
        <link rel="stylesheet" href="/css/menu_bar.css">
      <script src="/js/menu_bar.js" defer></script>
+     <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const backBtn = document.getElementById("backBtn");
+    const role = localStorage.getItem("role"); // role stored at login
+
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            if (role === "Employee") {
+                window.location.href = "/employee_dashboard";
+            } else if (role === "Manager") {
+                window.location.href = "/dashboard";
+            } else {
+                window.location.href = "/"; // fallback
+            }
+        });
+    }
+});
+</script>
 </head>
 <body>
 
 <div class="dashboard-container">
   <div class="top-buttons">
-        <button class="back-btn" onclick="window.location.href='/dashboard'">Back</button>
+        <button class="back-btn" id="backBtn">Back</button>
         <button class="logout-btn" id="logoutBtn" type="submit">Logout</button>
     </div>
    

@@ -1,5 +1,4 @@
 // ===== Elements =====
-const backBtn = document.getElementById("backBtn");
 const logoutBtn = document.getElementById("logoutBtn"); 
 const searchBtn = document.getElementById("searchBtn");
 const searchInput = document.getElementById("searchInput");
@@ -24,7 +23,6 @@ let dirty = false;
 Object.values(inputs).forEach(i => i.disabled = true);
 
 // ===== Navigation =====
-backBtn.onclick = () => window.location.href = "/dashboard";
 
 logoutBtn.addEventListener("click", async () => {
     const token = localStorage.getItem("sessionToken");

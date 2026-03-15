@@ -9,9 +9,6 @@
 #include <string>
 #include <ctime>
 
-// Global session map: token -> username
-std::unordered_map<std::string, std::string> sessions;
-
 
 using namespace std;
 
@@ -86,6 +83,13 @@ struct CustomerData{
     int postCode;
     
 };
+
+struct SessionData {
+    std::string username;
+    std::string role;
+};
+
+std::unordered_map<std::string, SessionData> sessions;
 
 
 // --- UTILITY FUNCTIONS ---
@@ -524,7 +528,7 @@ void loadUserAudit(sqlite3* db, std::vector<AuditData>& audits, const std::strin
         SELECT a.audit_id, u.username, u.role, a.timestamp
         FROM audit a
         JOIN users u ON a.user_id = u.user_id
-        WHERE u.owner = ?
+        WHERE a.owner = ?
         ORDER BY a.audit_id DESC
     )";
 
@@ -750,35 +754,56 @@ int main() {
 
     sqlite3_stmt* stmt;
     const char* sql = "SELECT user_id, owner, password_hash, role FROM users WHERE username = ?;";
-    sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr);
+    if (sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return crow::response(500, "DB error");
+
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    crow::json::wvalue res;
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         int user_id = sqlite3_column_int(stmt, 0);
-        std::string owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        std::string db_hash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        std::string role = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+
+        const unsigned char* owner_text = sqlite3_column_text(stmt, 1);
+        std::string owner = owner_text ? reinterpret_cast<const char*>(owner_text) : "";
+
+        const unsigned char* hash_text = sqlite3_column_text(stmt, 2);
+        std::string db_hash = hash_text ? reinterpret_cast<const char*>(hash_text) : "";
+
+        const unsigned char* role_text = sqlite3_column_text(stmt, 3);
+        std::string role = role_text ? reinterpret_cast<const char*>(role_text) : "";
 
         if (db_hash == input_hash) {
-            // generate simple session token
             std::string token = username + "_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
-            sessions[token] = username;
+            sessions[token] = {username, role};
 
-            crow::json::wvalue res;
             res["status"] = "success";
             res["username"] = username;
             res["role"] = role;
-            res["token"] = token;  // send token to frontend
+            res["token"] = token;
 
             userAudit(db_prodexa, user_id, owner, username);
 
-             sqlite3_finalize(stmt);
-            return crow::response(200, res);
+            sqlite3_finalize(stmt);
+            return crow::response(res);
         }
     }
 
     sqlite3_finalize(stmt);
     return crow::response(401, "Invalid credentials");
+});
+
+
+// --- USER ROLE API ---
+CROW_ROUTE(app, "/me").methods(crow::HTTPMethod::GET)([](const crow::request& req){
+    auto token = req.get_header_value("Authorization");
+    if (sessions.find(token) == sessions.end())
+        return crow::response(401, "Unauthorized");
+
+    crow::json::wvalue res;
+    res["username"] = sessions[token].username;
+    res["role"] = sessions[token].role;
+    return crow::response(res);
 });
 
 
@@ -790,16 +815,22 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
         string username = body["username"].s();
         string owner  = username;
         string password = body["password"].s();
+        string confirm_password = body["confirm_password"].s();
+        string email = body["email"].s();
         string role = body["role"].s();
         bool termsAccepted = body["termsAccepted"].b();
         string hashed = hashPassword(password);
         time_t terms_accepted_at = time(nullptr);
 
+        if(password != confirm_password) {
+            return crow::response(402, "Passwords do not match");
+        }
+
          if (!termsAccepted) {
             return crow::response(400, "Terms must be accepted");
         }
         sqlite3_stmt* stmt;
-        const char* sql = "INSERT INTO users (owner, username, password_hash, role, termsAccepted, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?);";
+        const char* sql = "INSERT INTO users (owner, username, password_hash, role, termsAccepted, terms_accepted_at, email) VALUES (?, ?, ?, ?, ?, ?, ?);";
         if (sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return crow::response(500);
 
@@ -809,6 +840,7 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
         sqlite3_bind_text(stmt, 4, role.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 5, termsAccepted ? 1 : 0);
         sqlite3_bind_int64(stmt, 6, static_cast<sqlite3_int64>(terms_accepted_at));
+        sqlite3_bind_text(stmt, 7, email.c_str(), -1, SQLITE_TRANSIENT);
 
         if (sqlite3_step(stmt) != SQLITE_DONE) return crow::response(409, "User exists");
 
@@ -825,20 +857,26 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
         if (token.empty() || sessions.find(token) == sessions.end())
              return crow::response(401, "Not logged in");
 
-        string username = sessions[token];
+        string username = sessions[token].username;
         
         string sub_username = body["username"].s();
         string password = body["password"].s();
+        string confirm_password = body["confirm_password"].s();
+        string email = body["email"].s();
         string role = body["role"].s();
         bool termsAccepted = body["termsAccepted"].b();
         string hashed = hashPassword(password);
         time_t terms_accepted_at = time(nullptr);
 
+        if(password != confirm_password) {
+            return crow::response(400, "Passwords do not match");
+        }
+
          if (!termsAccepted) {
             return crow::response(400, "Terms must be accepted");
         }
         sqlite3_stmt* stmt;
-        const char* sql = "INSERT INTO users (owner, username, password_hash, role, termsAccepted, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?);";
+        const char* sql = "INSERT INTO users (owner, username, password_hash, role, termsAccepted, terms_accepted_at, email) VALUES (?, ?, ?, ?, ?, ?, ?);";
         if (sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr) != SQLITE_OK)
             return crow::response(500);
 
@@ -848,6 +886,7 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
         sqlite3_bind_text(stmt, 4, role.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 5, termsAccepted ? 1 : 0);
         sqlite3_bind_int64(stmt, 6, static_cast<sqlite3_int64>(terms_accepted_at));
+        sqlite3_bind_text(stmt, 7, email.c_str(), -1, SQLITE_TRANSIENT);
 
         if (sqlite3_step(stmt) != SQLITE_DONE) return crow::response(409, "User exists");
 
@@ -868,7 +907,7 @@ CROW_ROUTE(app, "/add_user").methods(crow::HTTPMethod::POST)([&db_prodexa](const
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
 
-string username = sessions[token];
+string username = sessions[token].username;
 vector<UsersData> Users;
 Users.clear();
 
@@ -904,7 +943,8 @@ CROW_ROUTE(app, "/logout").methods(crow::HTTPMethod::POST)([&db_prodexa](const c
     if(it == sessions.end())
         return crow::response(401, "Not logged in");
 
-         std::string username = it->second;
+         std::string username = it->second.username; 
+         std::string role     = it->second.role;     
 
     sqlite3_stmt* stmt;
     const char* sql = "SELECT user_id, owner FROM users WHERE username = ?;";
@@ -939,14 +979,14 @@ CROW_ROUTE(app, "/current_user")([&db_prodexa](const crow::request& req){
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-    std::string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
     sqlite3_stmt* stmt;
     const char* sql = "SELECT role FROM users WHERE username = ?;";
     sqlite3_prepare_v2(db_prodexa, sql, -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
 
-    std::string role = "user";
     if (sqlite3_step(stmt) == SQLITE_ROW)
         role = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
 
@@ -968,7 +1008,8 @@ CROW_ROUTE(app, "/api/audit_users")
     if(token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-    std::string owner = sessions[token]; // logged-in username as owner
+    std::string owner = sessions[token].username;
+    std::string role = sessions[token].role;
 
     std::vector<AuditData> audits;
     loadUserAudit(db_prodexa, audits, owner);
@@ -984,6 +1025,7 @@ CROW_ROUTE(app, "/api/audit_users")
         obj["role"] = a.role;
         obj["timestamp"] = a.timestamp;
         tempList.push_back(std::move(obj));
+        cout << "Audit record: " << a.audit_id << ", " << a.username << ", " << a.role << ", " << a.timestamp << endl;
     }
 
     out["Users"] = std::move(tempList);
@@ -1000,7 +1042,8 @@ CROW_ROUTE(app, "/api/products")
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
 
-string username = sessions[token];
+std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
 loadProducts(db_prodexa, products, username);
 
@@ -1042,7 +1085,8 @@ CROW_ROUTE(app, "/get_product")
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
 
-string username = sessions[token];
+std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
 loadProducts(db_prodexa, products, username);
 
@@ -1083,7 +1127,8 @@ CROW_ROUTE(app, "/api/sales")
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
 
-string username = sessions[token];
+std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 vector<sale> sales;
@@ -1147,7 +1192,8 @@ if (token.empty() || sessions.find(token) == sessions.end())
             return crow::response(400, "Year must be between 2000 and 2100");
     
 
-string username = sessions[token];
+std::string username = sessions[token].username;
+std::string role = sessions[token].role;
 transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 vector<SalesReport> reports;
@@ -1179,7 +1225,8 @@ CROW_ROUTE(app, "/get_sale")
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-    std::string username = sessions[token];
+   std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
    auto sale_code_str = req.url_params.get("sale_code");
 if (!sale_code_str) {
     sale_code_str = req.url_params.get("query"); // fallback
@@ -1220,7 +1267,8 @@ CROW_ROUTE(app, "/api/users")
     if(token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-    string username = sessions[token];
+   std::string username = sessions[token].username;
+    std::string role = sessions[token].role;;
 
     vector<UsersData> Users;
     loadUsers(db_prodexa, Users, username);
@@ -1250,7 +1298,8 @@ CROW_ROUTE(app, "/api/customers")
 if(token.empty() || sessions.find(token) == sessions.end())
    return crow::response(401,"Not logged in");
 
-   string username = sessions[token];
+   std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
 
    vector<CustomerData> Customers;
@@ -1293,7 +1342,8 @@ CROW_ROUTE(app, "/get_customers")
 if (token.empty() || sessions.find(token) == sessions.end())
     return crow::response(401, "Not logged in");
 
-string username = sessions[token];
+std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 vector<CustomerData> Customers;
 Customers.clear();
 
@@ -1366,6 +1416,19 @@ if (name_lower.find(query_lower) != string::npos) {
 CROW_ROUTE(app, "/dashboard")([](){
     ifstream file("static/html/dashboard.html", ios::binary);
     if(!file.is_open()) return crow::response(404, "dashboard.html not found");
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    crow::response res(buffer.str());
+    res.add_header("Content-Type", "text/html");
+    return res;
+});
+
+
+// --- EMPLOYEE DASHBOARD PAGE ---
+CROW_ROUTE(app, "/employee_dashboard")([](){
+    ifstream file("static/html/employee_dashboard.html", ios::binary);
+    if(!file.is_open()) return crow::response(404, "employee_dashboard.html not found");
 
     stringstream buffer;
     buffer << file.rdbuf();
@@ -1646,7 +1709,8 @@ CROW_ROUTE(app, "/menu_bar")([](){
         auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
-    string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
         Product p;
         p.owner = username;
@@ -1686,7 +1750,8 @@ CROW_ROUTE(app, "/menu_bar")([](){
         auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
-    string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
         if(updateProduct(body, products, db_prodexa, username) )
             return crow::response(200, "Updated");
@@ -1703,7 +1768,8 @@ CROW_ROUTE(app, "/menu_bar")([](){
         auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
-    string username = sessions[token];
+   std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
         int code = body["code"].i();
         if(deleteProduct(code, body, products, db_prodexa, username) )
@@ -1724,7 +1790,8 @@ CROW_ROUTE(app, "/menu_bar")([](){
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-   string username = sessions[token];
+   std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 
@@ -1797,7 +1864,8 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
         auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
-    string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
         if(deleteSale(db_prodexa, sale_code, username) )
             return crow::response(200, "Deleted");
@@ -1815,7 +1883,8 @@ CROW_ROUTE(app, "/delete_user").methods(crow::HTTPMethod::POST)
         auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
-    string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
         if(deleteUser(db_prodexa, user_id, username) )
             return crow::response(200, "Deleted");
@@ -1836,7 +1905,8 @@ CROW_ROUTE(app, "/add_customer").methods(crow::HTTPMethod::POST)
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-    string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
     CustomerData c;
     c.owner    = username;
@@ -1872,7 +1942,8 @@ CROW_ROUTE(app, "/update_customer").methods(crow::HTTPMethod::POST)
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-    std::string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
     if (updateCustomer(body, db_prodexa, username))
         return crow::response(200, "Customer updated successfully");
@@ -1892,7 +1963,8 @@ CROW_ROUTE(app, "/delete_customer").methods(crow::HTTPMethod::POST)
         auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
-    string username = sessions[token];
+    std::string username = sessions[token].username;
+    std::string role = sessions[token].role;
 
         if(deleteCustomer(db_prodexa, customer_id, username) )
             return crow::response(200, "Deleted");

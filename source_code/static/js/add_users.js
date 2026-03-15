@@ -41,6 +41,8 @@ addUserForm.addEventListener("submit", async (e) => {
     const UserData = {
         username: document.getElementById("username").value,
         password: document.getElementById("password").value,
+        confirm_password: document.getElementById("confirmPassword").value,
+        email: document.getElementById("email").value,
         role: document.getElementById("role").value,
         termsAccepted: document.getElementById("termsAccepted").checked
     };
@@ -55,9 +57,19 @@ addUserForm.addEventListener("submit", async (e) => {
             body: JSON.stringify(UserData)
         });
 
+         if (!username || !password) return alert("Enter username & password");
+
+        if (password !== confirm_password) {
+          alert("Passwords do not match.");
+           return;
+         }
+
         if (res.ok) {
             alert("User added successfully!");
             addUserForm.reset();
+        } else if (res.status === 400) {
+            const text = await res.text();
+            alert("Failed: " + text);
         } else if (res.status === 409) {
             alert("User already exists!");
         } else if (res.status === 401) {
