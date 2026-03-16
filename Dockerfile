@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 
 # Build your app
-RUN mkdir build && clang++ source_code/product_manager.cpp -std=c++17 -Iexternal/crow/include \
+RUN mkdir -p build && clang++ source_code/product_manager.cpp -std=c++17 -Iexternal/crow/include \
     -Iexternal/asio/asio/include -lcrypto -lsqlite3 -lpthread -o build/product_manager_app
 
 # Make sure DB exists
