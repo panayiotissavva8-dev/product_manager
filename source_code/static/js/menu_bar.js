@@ -1,5 +1,5 @@
 // Load the menu dynamically
-fetch("/assets/menu_bar.html")
+fetch("/assets/html/menu_bar.html")
     .then(res => res.text())
     .then(html => {
         document.body.insertAdjacentHTML("afterbegin", html);
