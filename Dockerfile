@@ -7,7 +7,7 @@ ENV APP_DIR=/app
 ENV DB_PATH=$APP_DIR/build/prodexa.db
 ENV PORT=18080
 
-# --- Install only necessary dependencies ---
+# --- Install dependencies ---
 RUN apt-get update && apt-get install -y \
     clang g++ make cmake git sqlite3 libsqlite3-dev libssl-dev \
     libcurl4-openssl-dev \
@@ -18,6 +18,10 @@ WORKDIR $APP_DIR
 
 # --- Copy project files ---
 COPY . .
+
+# --- Clone Crow and Asio headers ---
+RUN git clone https://github.com/CrowCpp/Crow.git external/crow && \
+    git clone https://github.com/chriskohlhoff/asio.git external/asio
 
 # --- Build app ---
 RUN mkdir -p build && \
@@ -36,7 +40,7 @@ RUN mkdir -p build && \
     sqlite3 $DB_PATH "CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT NOT NULL, code INTEGER NOT NULL, brand TEXT NOT NULL, name TEXT NOT NULL, quantity INTEGER DEFAULT 0, stock_alert INTEGER DEFAULT 0, cost REAL DEFAULT 0, price REAL DEFAULT 0, discount REAL DEFAULT 0, vat_amount INTEGER, price_discount REAL, total_price REAL);" && \
     sqlite3 $DB_PATH "CREATE TABLE IF NOT EXISTS sales(sale_code INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT NOT NULL, customer_id INTEGER NOT NULL, code INTEGER NOT NULL, name TEXT NOT NULL, brand TEXT NOT NULL, quantity INTEGER DEFAULT 0, price REAL DEFAULT 0, discount INTEGER DEFAULT 0, vat_amount INTEGER DEFAULT 0, total_price REAL DEFAULT 0, sum_price REAL NOT NULL, cost REAL NOT NULL, total_cost REAL NOT NULL, date TEXT NOT NULL, FOREIGN KEY(customer_id) REFERENCES customers(customer_id));"
 
-# --- Expose port for Render ---
+# --- Expose port ---
 EXPOSE $PORT
 
 # --- Start the app ---
