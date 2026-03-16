@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: product-manager
+    env: docker
+    dockerfilePath: ./Dockerfile
+    branch: main
+    region: oregon
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "18080"
+      - key: APP_ENV
+        value: "production"
+    healthCheckPath: /
+    instanceCount: 1
+    instanceType: starter
