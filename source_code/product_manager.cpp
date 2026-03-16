@@ -10,7 +10,7 @@
 #include <ctime>
 
 sqlite3* db_prodexa = nullptr;
-const std::string DB_PATH = "./db/prodexa.sqlite"; 
+const std::string DB_PATH = "build/prodexa.sqlite"; 
 
 
 using namespace std;
@@ -109,6 +109,98 @@ std::string getCurrentDateTime() {
 
 
 // --- DATABASE FUNCTIONS ---
+
+void initializeDatabase(sqlite3* db)
+{
+    char* errMsg = nullptr;
+
+    const char* audit_table = R"(
+    CREATE TABLE IF NOT EXISTS audit (
+        audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner TEXT,
+        user_id INTEGER,
+        timestamp TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(user_id)
+    );
+    )";
+
+    const char* customers_table = R"(
+    CREATE TABLE IF NOT EXISTS customers (
+        customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner TEXT NOT NULL,
+        customer TEXT NOT NULL,
+        type TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        address TEXT NOT NULL,
+        postCode TEXT NOT NULL
+    );
+    )";
+
+    const char* products_table = R"(
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner TEXT NOT NULL,
+        code INTEGER NOT NULL,
+        brand TEXT NOT NULL,
+        name TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        stock_alert INTEGER DEFAULT 0,
+        cost REAL NOT NULL DEFAULT 0,
+        price REAL NOT NULL DEFAULT 0,
+        discount REAL DEFAULT 0,
+        vat_amount INTEGER,
+        price_discount REAL,
+        total_price REAL
+    );
+    )";
+
+    const char* sales_table = R"(
+    CREATE TABLE IF NOT EXISTS sales (
+        sale_code INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner TEXT NOT NULL,
+        customer_id INTEGER NOT NULL,
+        code INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        brand TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        price REAL NOT NULL DEFAULT 0,
+        discount INTEGER NOT NULL DEFAULT 0,
+        vat_amount INTEGER NOT NULL,
+        total_price REAL NOT NULL DEFAULT 0,
+        sum_price REAL NOT NULL,
+        cost REAL NOT NULL,
+        total_cost REAL NOT NULL,
+        date TEXT NOT NULL,
+        FOREIGN KEY(customer_id) REFERENCES customers(customer_id)
+    );
+    )";
+
+    const char* users_table = R"(
+    CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner TEXT NOT NULL DEFAULT 0,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 0,
+        termsAccepted INTEGER NOT NULL DEFAULT 0,
+        terms_accepted_at INTEGER NOT NULL DEFAULT 0,
+        email TEXT
+    );
+    )";
+
+    sqlite3_exec(db, users_table, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, products_table, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, customers_table, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, sales_table, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, audit_table, nullptr, nullptr, &errMsg);
+
+    if (errMsg != nullptr)
+    {
+        std::cerr << "DB Init Error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
+}
 
 // --- PRODUCT FUNCTIONS ---
 
@@ -730,6 +822,8 @@ if(rc) {
     return 1;  // exit if DB fails to open
 }
 
+initializeDatabase(db_prodexa);
+
 
 
 
@@ -744,12 +838,13 @@ if(rc) {
     crow::SimpleApp app;
 
 CROW_ROUTE(app, "/")([]{
-    std::ifstream file("source_code/static/html/index.html");
+    std::ifstream file("source_code/static/html/landing.html");
     if (!file.is_open()) return crow::response(404);
     std::stringstream buffer;
     buffer << file.rdbuf();
     return crow::response(buffer.str());
 });
+
 
     // --- LOGIN API ---
     CROW_ROUTE(app, "/login").methods(crow::HTTPMethod::POST)([](const crow::request& req){
@@ -1384,7 +1479,7 @@ if (name_lower.find(query_lower) != string::npos) {
 
     // --- LOGIN PAGE ---
     CROW_ROUTE(app, "/login")([](){
-        ifstream file("static/html/login.html", ios::binary);
+        ifstream file("source_code/static/html/login.html", ios::binary);
         if(!file.is_open()) return crow::response(404, "Cannot open login.html");
 
         stringstream buffer;
@@ -1396,7 +1491,7 @@ if (name_lower.find(query_lower) != string::npos) {
 
     // --- REGISTER PAGE ---
     CROW_ROUTE(app, "/register")([](){
-        ifstream file("static/html/register.html", ios::binary);
+        ifstream file("source_code/static/html/register.html", ios::binary);
         if(!file.is_open()) return crow::response(404, "Cannot open register.html");
 
         stringstream buffer;
@@ -1408,7 +1503,7 @@ if (name_lower.find(query_lower) != string::npos) {
 
     // --- DASHBOARD PAGE ---
 CROW_ROUTE(app, "/dashboard")([](){
-    ifstream file("static/html/dashboard.html", ios::binary);
+    ifstream file("source_code/static/html/dashboard.html", ios::binary);
     if(!file.is_open()) return crow::response(404, "dashboard.html not found");
 
     stringstream buffer;
@@ -1421,7 +1516,7 @@ CROW_ROUTE(app, "/dashboard")([](){
 
 // --- EMPLOYEE DASHBOARD PAGE ---
 CROW_ROUTE(app, "/employee_dashboard")([](){
-    ifstream file("static/html/employee_dashboard.html", ios::binary);
+    ifstream file("source_code/static/html/employee_dashboard.html", ios::binary);
     if(!file.is_open()) return crow::response(404, "employee_dashboard.html not found");
 
     stringstream buffer;
@@ -1435,7 +1530,7 @@ CROW_ROUTE(app, "/employee_dashboard")([](){
 
 // --- VIEW PRODUCTS PAGE ---
 CROW_ROUTE(app, "/products")([](){
-    ifstream file("static/html/view_products.html", ios::binary);
+    ifstream file("source_code/static/html/view_products.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "view_products.html not found");
 
@@ -1448,7 +1543,7 @@ CROW_ROUTE(app, "/products")([](){
 
 // --- ADD PRODUCT PAGE ---
 CROW_ROUTE(app, "/add_product")([](){
-    ifstream file("static/html/add_product.html", ios::binary);
+    ifstream file("source_code/static/html/add_product.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "add_product.html not found");
 
@@ -1461,7 +1556,7 @@ CROW_ROUTE(app, "/add_product")([](){
 
 // --- EDIT PRODUCT PAGE ---
 CROW_ROUTE(app, "/edit_product")([](){
-    ifstream file("static/html/edit_product.html", ios::binary);
+    ifstream file("source_code/static/html/edit_product.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "edit_product.html not found");
 
@@ -1474,7 +1569,7 @@ CROW_ROUTE(app, "/edit_product")([](){
 
 // --- DELETE PRODUCT PAGE ---
 CROW_ROUTE(app, "/delete_product")([](){
-    ifstream file("static/html/delete_product.html", ios::binary);
+    ifstream file("source_code/static/html/delete_product.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "delete_product.html not found");
 
@@ -1490,7 +1585,7 @@ CROW_ROUTE(app, "/delete_product")([](){
 
 // --- VIEW SALES PAGE ---
 CROW_ROUTE(app, "/sales")([](){
-    ifstream file("static/html/view_sales.html", ios::binary);
+    ifstream file("source_code/static/html/view_sales.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "view_sales.html not found");
 
@@ -1503,7 +1598,7 @@ CROW_ROUTE(app, "/sales")([](){
 
 // --- ADD SALE PAGE ---
 CROW_ROUTE(app, "/add_sale")([](){
-    ifstream file("static/html/add_sale.html", ios::binary);
+    ifstream file("source_code/static/html/add_sale.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "add_sale.html not found");
 
@@ -1516,7 +1611,7 @@ CROW_ROUTE(app, "/add_sale")([](){
 
 // --- DELETE SALE PAGE ---
 CROW_ROUTE(app, "/delete_sale")([](){
-    ifstream file("static/html/delete_sale.html", ios::binary);
+    ifstream file("source_code/static/html/delete_sale.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "delete_sale.html not found");
 
@@ -1529,7 +1624,7 @@ CROW_ROUTE(app, "/delete_sale")([](){
 
 // --- SALES REPORT PAGE ---
 CROW_ROUTE(app, "/sales_report")([](){
-    ifstream file("static/html/sales_report.html", ios::binary);
+    ifstream file("source_code/static/html/sales_report.html", ios::binary);
     if (!file.is_open())
         return crow::response(404, "sales_report.html not found");
 
@@ -1545,7 +1640,7 @@ CROW_ROUTE(app, "/sales_report")([](){
 
 // --- VIEW USERS PAGE ---
 CROW_ROUTE(app, "/view_users")([](){
-    ifstream file("static/html/view_users.html", ios::binary);
+    ifstream file("source_code/static/html/view_users.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"view_users.html not found");
 
@@ -1559,7 +1654,7 @@ CROW_ROUTE(app, "/view_users")([](){
 
 // --- ADD USER PAGE ---
 CROW_ROUTE(app, "/add_users")([](){
-    ifstream file("static/html/add_users.html", ios::binary);
+    ifstream file("source_code/static/html/add_users.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"add_users.html not found");
 
@@ -1573,7 +1668,7 @@ CROW_ROUTE(app, "/add_users")([](){
 
 // ---- DELETE USER PAGE ---
 CROW_ROUTE(app, "/delete_users")([](){
-    ifstream file("static/html/delete_users.html", ios::binary);
+    ifstream file("source_code/static/html/delete_users.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"delete_users.html not found");
 
@@ -1587,7 +1682,7 @@ CROW_ROUTE(app, "/delete_users")([](){
 
 // --- USER AUDIT PAGE ---
 CROW_ROUTE(app, "/view_audit_users")([](){
-    ifstream file("static/html/view_audit_users.html", ios::binary);
+    ifstream file("source_code/static/html/view_audit_users.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"view_audit_users.html not found");
 
@@ -1604,7 +1699,7 @@ CROW_ROUTE(app, "/view_audit_users")([](){
 
 // --- VIEW CUSTOMERS PAGE ---
 CROW_ROUTE(app, "/view_customers")([](){
-    ifstream file("static/html/view_customers.html", ios::binary);
+    ifstream file("source_code/static/html/view_customers.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"view_customers.html not found");
 
@@ -1619,7 +1714,7 @@ CROW_ROUTE(app, "/view_customers")([](){
 
 // --- ADD CUSTOMER PAGE ---
 CROW_ROUTE(app, "/add_customers")([](){
-    ifstream file("static/html/add_customers.html", ios::binary);
+    ifstream file("source_code/static/html/add_customers.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"add_customers.html not found");
 
@@ -1633,7 +1728,7 @@ CROW_ROUTE(app, "/add_customers")([](){
 
 // --- EDIT CUSTOMERS PAGE ---
 CROW_ROUTE(app, "/edit_customers")([](){
-    ifstream file("static/html/edit_customers.html", ios::binary);
+    ifstream file("source_code/static/html/edit_customers.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"edit_customers.html not found");
 
@@ -1647,7 +1742,7 @@ CROW_ROUTE(app, "/edit_customers")([](){
 
 // --- DELETE CUSTOMER PAGE ---
 CROW_ROUTE(app, "/delete_customers")([](){
-    ifstream file("static/html/delete_customers.html", ios::binary);
+    ifstream file("source_code/static/html/delete_customers.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"delete_customers.html not found");
 
@@ -1662,7 +1757,7 @@ CROW_ROUTE(app, "/delete_customers")([](){
 
 // --- MENU BAR ---
 CROW_ROUTE(app, "/menu_bar")([](){
-    ifstream file("static/html/menu_bar.html", ios::binary);
+    ifstream file("source_code/static/html/menu_bar.html", ios::binary);
     if(!file.is_open())
     return crow::response(404,"menu_bar.html not found");
 
@@ -1676,21 +1771,24 @@ CROW_ROUTE(app, "/menu_bar")([](){
 
     // --- STATIC FILES ---
 app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string path){
-    std::string full_path = "static/" + path; // folder where your files live
+
+    std::string full_path = "source_code/static/" + path;
 
     std::ifstream file(full_path, std::ios::binary);
-    if (!file) return crow::response(404, "File not found");
+    if (!file)
+        return crow::response(404, "File not found");
 
     std::ostringstream contents;
     contents << file.rdbuf();
 
     crow::response res(contents.str());
 
-    // Determine MIME type (we’ll fix the ends_with issue next)
     std::string mime_type = "application/octet-stream";
     size_t dot_pos = path.rfind('.');
+
     if (dot_pos != std::string::npos) {
         std::string ext = path.substr(dot_pos);
+
         if (ext == ".html") mime_type = "text/html";
         else if (ext == ".css") mime_type = "text/css";
         else if (ext == ".js") mime_type = "application/javascript";
@@ -1698,8 +1796,8 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
         else if (ext == ".jpg" || ext == ".jpeg") mime_type = "image/jpeg";
         else if (ext == ".gif") mime_type = "image/gif";
     }
-    res.add_header("Content-Type", mime_type);
 
+    res.add_header("Content-Type", mime_type);
     return res;
 });
 
@@ -1982,16 +2080,17 @@ CROW_ROUTE(app, "/delete_customer").methods(crow::HTTPMethod::POST)
 
 
     // --- RUN SERVER ---
-    int port = 18080;
-    if (const char* env_p = std::getenv("PORT")) {
-        port = std::stoi(env_p);
-    }
-    app.port(port).multithreaded().run();
+   int port = 18080;
+if (const char* env_p = std::getenv("PORT")) {
+    port = std::stoi(env_p);
+}
 
-    // --- CLOSE DATABASES ---
-    sqlite3_close(db_prodexa);
+// Bind to all interfaces so Render can route traffic
+app.bindaddr("0.0.0.0").port(port).multithreaded().run();
 
-    return 0;
+sqlite3_close(db_prodexa);
+
+return 0;
 }
 
 
