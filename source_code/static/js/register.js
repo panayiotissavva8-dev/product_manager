@@ -24,7 +24,7 @@ registerBtn.addEventListener("click", async (e) => {
     }
 
     try {
-        const response = await fetch("http://localhost:18080/add_user", {
+        const response = await fetch("/add_user", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password, confirm_password, email, role, termsAccepted: true}),
