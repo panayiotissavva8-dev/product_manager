@@ -230,12 +230,14 @@ void loadProducts(sqlite3* db, vector<Product>& products, const string& username
     sqlite3_finalize(stmt);
 }
 
-void saveProducts(sqlite3* db, const vector<Product>& products) {
+void insertProduct(sqlite3* db, const Product& p) {
     sqlite3_stmt* stmt;
     const char* sql = "INSERT INTO products (owner, code, brand, name, quantity, stock_alert, cost, price, discount,  vat_amount, price_discount, total_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-
-    for (const auto& p : products) {
+    
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Prepare failed\n";
+        return;
+    }
         sqlite3_bind_text(stmt, 1, p.owner.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 2, p.code);
         sqlite3_bind_text(stmt, 3, p.brand.c_str(), -1, SQLITE_TRANSIENT);
@@ -249,20 +251,30 @@ void saveProducts(sqlite3* db, const vector<Product>& products) {
         sqlite3_bind_double(stmt, 11, p.price_discount);
         sqlite3_bind_double(stmt, 12, p.total_price);
 
-        sqlite3_step(stmt);
-        sqlite3_reset(stmt);
+
+    int rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        std::cerr << "Insert failed: " << sqlite3_errmsg(db) << std::endl;
+    } else {
+        std::cout << "Insert success\n";
     }
+
     sqlite3_finalize(stmt);
+        
 }
+
 
 bool addProduct(const Product& p, vector<Product>& products, sqlite3* db) {
     for (auto& prod : products)
-        if (prod.code == p.code) return false;
+        if (prod.code == p.code && prod.owner == p.owner) 
+        return false;
 
     products.push_back(p);
-    saveProducts(db, products);
+    insertProduct(db, p);
     return true;
 }
+
 
 bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sqlite3* db, const string& username) {
     if (!body.has("code"))
@@ -1837,7 +1849,7 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
             return crow::response(403, "Discount cannot be greater than 100%");
 
          products.push_back(p);
-         saveProducts(db_prodexa, products);
+         insertProduct(db_prodexa, p);
         
          return crow::response(200, "Product added");
         
@@ -1932,7 +1944,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
             }
             if(p.quantity < p.stock_alert) {
                 sales.push_back(s);
-                saveProducts(db_prodexa, products);
+                insertProduct(db_prodexa, p);
                 saveSales(db_prodexa, sales);
                 std::cout << "Sale struct customer_id: " 
           << s.customer_id 
@@ -1943,7 +1955,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
             }
             else {
                  sales.push_back(s);
-                saveProducts(db_prodexa, products);
+                insertProduct(db_prodexa, p);
                 saveSales(db_prodexa, sales);
                 std::cout << "Sale struct customer_id: " 
           << s.customer_id 

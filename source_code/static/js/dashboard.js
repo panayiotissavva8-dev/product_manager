@@ -61,6 +61,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
+     //  LOGOUT
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            try {
+                const response = await fetch("http://localhost:18080/logout", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": token
+                    }
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem("sessionToken");
+                    window.location.href = "/";
+                } else {
+                    alert("Logout failed");
+                }
+            } catch (err) {
+                console.error("Error during logout:", err);
+            }
+        });
+    }
+
     //  NAVIGATION BUTTONS
 
     // Products Buttons
@@ -119,28 +143,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         viewdeleteCustomersBtn.addEventListener("click", () =>  window.location.href = "/delete_customers");
     }
 
-
-    //  LOGOUT
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", async () => {
-            try {
-                const response = await fetch("http://localhost:18080/logout", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": token
-                    }
-                });
-
-                if (response.ok) {
-                    localStorage.removeItem("sessionToken");
-                    window.location.href = "/";
-                } else {
-                    alert("Logout failed");
-                }
-            } catch (err) {
-                console.error("Error during logout:", err);
-            }
-        });
-    }
 });
