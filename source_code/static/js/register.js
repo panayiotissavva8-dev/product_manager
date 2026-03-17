@@ -32,7 +32,7 @@ registerBtn.addEventListener("click", async (e) => {
 
         if (response.ok) {
             alert("Registration successful!");
-            window.location.href = "/";
+            window.location.href = "/login";
             } else if (response.status === 400) {
                 const text = await response.text();
                 alert("Failed: " + text);
