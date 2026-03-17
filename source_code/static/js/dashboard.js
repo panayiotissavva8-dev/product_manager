@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {
             try {
-                const response = await fetch("http://localhost:18080/logout", {
+                const response = await fetch("/logout", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

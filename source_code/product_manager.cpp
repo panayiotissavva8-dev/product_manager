@@ -1932,7 +1932,6 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
           << body["customer_id"].i() 
           << std::endl;
 
-
     // Update product stock
     loadProducts(db_prodexa, products, username);
     for (auto& p : products) {
@@ -1942,9 +1941,12 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
                 p.quantity = p.quantity + s.quantity; // revert stock change
                 return crow::response(400, "Insufficient stock");
             }
+             if(s.customer_id == 0){
+            return crow::response(400, "Customer required");
+          }
             if(p.quantity < p.stock_alert) {
                 sales.push_back(s);
-                insertProduct(db_prodexa, p);
+                if(updateProduct(body, products, db_prodexa, username) )
                 saveSales(db_prodexa, sales);
                 std::cout << "Sale struct customer_id: " 
           << s.customer_id 
@@ -1955,7 +1957,7 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
             }
             else {
                  sales.push_back(s);
-                insertProduct(db_prodexa, p);
+               if(updateProduct(body, products, db_prodexa, username) )
                 saveSales(db_prodexa, sales);
                 std::cout << "Sale struct customer_id: " 
           << s.customer_id 

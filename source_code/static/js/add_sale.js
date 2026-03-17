@@ -141,6 +141,11 @@ saveBtn.onclick = async () => {
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving...";
 
+    if (!inputs.customerId.value) {
+    alert("Select a customer.");
+    return;
+}
+
     const payload = {
         customer_id: inputs.customerId.value,
         code: Number(inputs.code.value),
