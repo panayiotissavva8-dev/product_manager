@@ -225,19 +225,21 @@ void loadProducts(sqlite3* db, vector<Product>& products, const string& username
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         Product p;
-        p.owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)); // optional, for info
-        p.code = sqlite3_column_int(stmt, 0);
-        p.brand = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        p.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        p.quantity = sqlite3_column_int(stmt, 3);
-        p.stock_alert = sqlite3_column_int(stmt, 4);
-        p.cost = sqlite3_column_double(stmt, 5);
-        p.price = sqlite3_column_double(stmt, 6);
-        p.discount = sqlite3_column_double(stmt, 7);
-        p.vat_amount = sqlite3_column_int(stmt, 8);
+        p.code           = sqlite3_column_int(stmt, 0);
+        p.brand          = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        p.name           = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        p.quantity       = sqlite3_column_int(stmt, 3);
+        p.stock_alert    = sqlite3_column_int(stmt, 4);
+        p.cost           = sqlite3_column_double(stmt, 5);
+        p.price          = sqlite3_column_double(stmt, 6);
+        p.discount       = sqlite3_column_double(stmt, 7);
+        p.vat_amount     = sqlite3_column_double(stmt, 8);
         p.price_discount = sqlite3_column_double(stmt, 9);
-        p.total_price = sqlite3_column_double(stmt, 10);
+        p.total_price    = sqlite3_column_double(stmt, 10);
+        p.owner          = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 11));
+
         products.push_back(p);
+        
     }
 
     sqlite3_finalize(stmt);
@@ -1226,7 +1228,6 @@ loadProducts(db_prodexa, products, username, role);
 
 
     for (const auto& p : products) {
-      //  if (p.owner != username) continue; // only search products of the logged-in user
         string name_lower = p.name;
         string query_lower = query;
         // convert both to lowercase for case-insensitive comparison
@@ -1987,6 +1988,7 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
         }
     }
 
+    
     return crow::response(404, "Product not found");
 });
 
