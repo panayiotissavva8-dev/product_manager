@@ -38,29 +38,25 @@ addUserForm.addEventListener("submit", async (e) => {
         return;
     }
 
+    // --- Grab values from form ---
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const confirm_password = document.getElementById("confirmPassword").value;
+    const email = document.getElementById("email").value.trim();
+    const role = document.getElementById("role").value;
+    const termsAccepted = document.getElementById("termsAccepted").checked;
+
+    // --- Validation ---
     if (!username || !password) return alert("Enter username & password");
+    if (password !== confirm_password) return alert("Passwords do not match");
+    if (!termsAccepted) return alert("You must accept the terms");
 
-        if (password !== confirm_password) {
-          alert("Passwords do not match.");
-           return;
-         }
-
-    const UserData = {
-        username: document.getElementById("username").value,
-        password: document.getElementById("password").value,
-        confirm_password: document.getElementById("confirmPassword").value,
-        email: document.getElementById("email").value,
-        role: document.getElementById("role").value,
-        termsAccepted: document.getElementById("termsAccepted").checked
-    };
+    const UserData = { username, password, confirm_password, email, role, termsAccepted };
 
     try {
         const res = await fetch("/add_sub_user", {
             method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": token   
-            },
+            headers: { "Content-Type": "application/json", "Authorization": token },
             body: JSON.stringify(UserData)
         });
 

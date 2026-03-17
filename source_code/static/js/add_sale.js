@@ -147,7 +147,7 @@ saveBtn.onclick = async () => {
 }
 
     const payload = {
-        customer_id: inputs.customerId.value,
+        customer_id: Number(inputs.customerId.value),
         code: Number(inputs.code.value),
         brand: inputs.brand.value,
         name: inputs.name.value,

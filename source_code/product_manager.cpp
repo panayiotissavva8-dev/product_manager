@@ -1962,10 +1962,10 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
 
     loadProducts(db_prodexa, products, username, role);
 
-    vector<sale> sales; // declare here so it's in scope
+    vector<sale> sales; 
 
     for (auto& p : products) {
-        if (p.code == s.code && p.owner == username) {
+        if (p.code == s.code) {
 
             int new_quantity = p.quantity - s.quantity;
 
