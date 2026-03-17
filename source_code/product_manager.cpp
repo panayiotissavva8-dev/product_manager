@@ -203,17 +203,29 @@ void initializeDatabase(sqlite3* db)
 }
 
 // --- PRODUCT FUNCTIONS ---
-
-void loadProducts(sqlite3* db, vector<Product>& products, const string& username) {
+void loadProducts(sqlite3* db, vector<Product>& products, const string& username, const string& role) {
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount, vat_amount, price_discount, total_price FROM products WHERE owner = ?;";
+    const char* sql;
+
     products.clear();
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return;
-    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+
+    if (role == "Manager") {
+        // Manager sees all products where owner = their username
+        sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount, vat_amount, price_discount, total_price "
+              "FROM products WHERE owner = ?;";
+        sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+    } else {
+        // Employee sees products of their manager (owner = manager)
+        sql = "SELECT code, brand, name, quantity, stock_alert, cost, price, discount, vat_amount, price_discount, total_price "
+              "FROM products WHERE owner = (SELECT owner FROM users WHERE username = ?);";
+        sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+    }
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-         Product p;
-        p.owner = username;
+        Product p;
+        p.owner = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)); // optional, for info
         p.code = sqlite3_column_int(stmt, 0);
         p.brand = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
         p.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
@@ -227,8 +239,10 @@ void loadProducts(sqlite3* db, vector<Product>& products, const string& username
         p.total_price = sqlite3_column_double(stmt, 10);
         products.push_back(p);
     }
+
     sqlite3_finalize(stmt);
 }
+
 
 void insertProduct(sqlite3* db, const Product& p) {
     sqlite3_stmt* stmt;
@@ -276,12 +290,7 @@ bool addProduct(const Product& p, vector<Product>& products, sqlite3* db) {
 }
 
 
-bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sqlite3* db, const string& username) {
-    if (!body.has("code"))
-        return false;
-
-    int code = body["code"].i();
-
+bool updateProduct(const Product& p, vector<Product>& products, sqlite3* db, const string& username) {
     const char* sql =
         "UPDATE products SET brand=?, name=?, quantity=?, stock_alert=?, cost=?, price=?, discount=?, vat_amount=? "
         "WHERE code=? AND owner=?;";
@@ -289,34 +298,30 @@ bool updateProduct(const crow::json::rvalue& body, vector<Product>& products, sq
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
         return false;
-        sqlite3_bind_text(stmt, 1, std::string(body["brand"].s()).c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, std::string(body["name"].s()).c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 3, body["quantity"].i());
-    sqlite3_bind_int(stmt, 4, body["stock_alert"].i());
-    sqlite3_bind_double(stmt, 5, body["cost"].d());
-    sqlite3_bind_double(stmt, 6, body["price"].d());
-    sqlite3_bind_double(stmt, 7, body["discount"].d());
-    sqlite3_bind_double(stmt, 8, body["vat_amount"].d());
-    sqlite3_bind_int(stmt, 9, code);
+
+    sqlite3_bind_text(stmt, 1, p.brand.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, p.name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, p.quantity);
+    sqlite3_bind_int(stmt, 4, p.stock_alert);
+    sqlite3_bind_double(stmt, 5, p.cost);
+    sqlite3_bind_double(stmt, 6, p.price);
+    sqlite3_bind_double(stmt, 7, p.discount);
+    sqlite3_bind_double(stmt, 8, p.vat_amount);
+    sqlite3_bind_int(stmt, 9, p.code);
     sqlite3_bind_text(stmt, 10, username.c_str(), -1, SQLITE_TRANSIENT);
 
-    std::cout << "Updating code: " << code << std::endl;
-    std::cout << "Owner from token: '" << username << "'" << std::endl;
-
-
-
-
+    std::cout << "Updating code: " << p.code << ", owner: '" << username << "'" << std::endl;
 
     bool updated = (sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0);
     sqlite3_finalize(stmt);
 
-    int changes = sqlite3_changes(db);
-if (changes == 0) {
-    std::cerr << "No row updated. code=" << code << ", owner=" << username << std::endl;
-    return false;
+    if (!updated) {
+        std::cerr << "No row updated. code=" << p.code << ", owner=" << username << std::endl;
+    }
+
+    return updated;
 }
- return updated;
-}
+
 
 bool deleteProduct(int code, const crow::json::rvalue& body, vector<Product>& products, sqlite3* db, const string& username) {
    if(!body.has("code"))
@@ -350,16 +355,24 @@ string hashPassword(const std::string& password) {
 
 
 // --- SALES FUNCTIONS ---
-
-void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
+void loadSales(sqlite3* db, vector<sale>& sales, const string& username, const string& role) {
     sales.clear();
     sqlite3_stmt* stmt;
+    const char* sql;
 
-    const char* sql =
-       "SELECT s.sale_code, s.customer_id, c.customer, s.code, s.brand, s.name, s.quantity, s.price, s.discount, s.vat_amount, s.total_price, s.sum_price, s.cost, s.total_cost, s.date "
-        "FROM sales s "
-        "LEFT JOIN customers c ON s.customer_id = c.customer_id "
-        "WHERE LOWER(s.owner) = LOWER(?);";
+    if (role == "Manager") {
+        sql = "SELECT s.sale_code, s.customer_id, c.customer, s.code, s.brand, s.name, s.quantity, s.price, "
+              "s.discount, s.vat_amount, s.total_price, s.sum_price, s.cost, s.total_cost, s.date "
+              "FROM sales s "
+              "LEFT JOIN customers c ON s.customer_id = c.customer_id "
+              "WHERE LOWER(s.owner) = LOWER(?);";
+    } else {
+        sql = "SELECT s.sale_code, s.customer_id, c.customer, s.code, s.brand, s.name, s.quantity, s.price, "
+              "s.discount, s.vat_amount, s.total_price, s.sum_price, s.cost, s.total_cost, s.date "
+              "FROM sales s "
+              "LEFT JOIN customers c ON s.customer_id = c.customer_id "
+              "WHERE LOWER(s.owner) = LOWER((SELECT owner FROM users WHERE username = ?));";
+    }
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         cerr << "Failed to prepare loadSales stmt: " << sqlite3_errmsg(db) << endl;
@@ -368,39 +381,39 @@ void loadSales(sqlite3* db, vector<sale>& sales, const string& username) {
 
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
 
-     while (sqlite3_step(stmt) == SQLITE_ROW) {
-    sale s;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        sale s;
+        s.sale_code = sqlite3_column_int(stmt, 0);
+        s.owner = username;
+        s.customer_id = sqlite3_column_int(stmt, 1);
+        const unsigned char* customer_text = sqlite3_column_text(stmt, 2);
+        s.customer = customer_text ? reinterpret_cast<const char*>(customer_text) : "";
 
-    s.sale_code = sqlite3_column_int(stmt, 0);
-    s.owner = username;
-    s.customer_id = sqlite3_column_int(stmt, 1);
-    const unsigned char* customer_text = sqlite3_column_text(stmt, 2);
-    s.customer = customer_text ? reinterpret_cast<const char*>(customer_text) : "";
+        s.code = sqlite3_column_int(stmt, 3);
+        const unsigned char* brand_text = sqlite3_column_text(stmt, 4);
+        s.brand = brand_text ? reinterpret_cast<const char*>(brand_text) : "";
 
-    s.code = sqlite3_column_int(stmt, 3);
-    const unsigned char* brand_text = sqlite3_column_text(stmt, 4);
-    s.brand = brand_text ? reinterpret_cast<const char*>(brand_text) : "";
+        const unsigned char* name_text = sqlite3_column_text(stmt, 5);
+        s.name = name_text ? reinterpret_cast<const char*>(name_text) : "";
 
-    const unsigned char* name_text = sqlite3_column_text(stmt, 5);
-    s.name = name_text ? reinterpret_cast<const char*>(name_text) : "";
+        s.quantity = sqlite3_column_int(stmt, 6);
+        s.price = sqlite3_column_double(stmt, 7);
+        s.discount = sqlite3_column_double(stmt, 8);
+        s.vat_amount = sqlite3_column_double(stmt, 9);
+        s.total_price = sqlite3_column_double(stmt, 10);
+        s.sum_price = sqlite3_column_double(stmt, 11);
+        s.cost = sqlite3_column_double(stmt, 12);
+        s.total_cost = sqlite3_column_double(stmt, 13);
 
-    s.quantity = sqlite3_column_int(stmt, 6);
-    s.price = sqlite3_column_double(stmt, 7);
-    s.discount = sqlite3_column_double(stmt, 8);
-    s.vat_amount = sqlite3_column_double(stmt, 9);
-    s.total_price = sqlite3_column_double(stmt, 10);
-    s.sum_price = sqlite3_column_double(stmt, 11);
-    s.cost = sqlite3_column_double(stmt, 12);
-    s.total_cost = sqlite3_column_double(stmt, 13);
+        const unsigned char* date_text = sqlite3_column_text(stmt, 14);
+        s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
 
-    const unsigned char* date_text = sqlite3_column_text(stmt, 14);
-    s.date = date_text ? reinterpret_cast<const char*>(date_text) : "";
-
-    sales.push_back(s);
-}
+        sales.push_back(s);
+    }
 
     sqlite3_finalize(stmt);
 }
+
 
 
 
@@ -672,53 +685,60 @@ void loadUserAudit(sqlite3* db, std::vector<AuditData>& audits, const std::strin
 
 
 // --- CUSTOMER FUNCTIONS ---
-
-void loadCustomers(sqlite3* db, vector<CustomerData>& Customers, const string& username){
+void loadCustomers(sqlite3* db, std::vector<CustomerData>& Customers, const std::string& username, const std::string& role) {
     sqlite3_stmt* stmt;
-    const char* sql = "SELECT customer_id, customer, type, email, phone, address, postCode FROM customers "
-                      "WHERE LOWER(owner) = LOWER(?);";
+    const char* sql;
 
-    if(sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK){
+    // Managers see their own customers, employees see manager's customers
+    if (role == "Manager") {
+        sql = "SELECT customer_id, customer, type, email, phone, address, postCode "
+              "FROM customers "
+              "WHERE LOWER(owner) = LOWER(?);";
+    } else {
+        sql = "SELECT customer_id, customer, type, email, phone, address, postCode "
+              "FROM customers "
+              "WHERE LOWER(owner) = LOWER((SELECT owner FROM users WHERE username = ?));";
+    }
+
+    Customers.clear();
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         std::cerr << "Failed to prepare loadCustomers stmt: " << sqlite3_errmsg(db) << std::endl;
         return;
     }
 
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
 
-    int colCount = sqlite3_column_count(stmt);
-std::cout << "Columns returned: " << colCount << std::endl;
-
-
-    while(sqlite3_step(stmt) == SQLITE_ROW){
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
         CustomerData c;
         c.owner = username;
 
-        std::cout << "Customer ID: " << sqlite3_column_int(stmt, 0) << std::endl;
-
+        c.customer_id = sqlite3_column_int(stmt, 0);
 
         const unsigned char* textVal;
 
-        c.customer_id = sqlite3_column_int(stmt, 0);
-
-        textVal = sqlite3_column_text(stmt, 1);   
+        textVal = sqlite3_column_text(stmt, 1);
         c.customer = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        textVal = sqlite3_column_text(stmt, 2);   
+        textVal = sqlite3_column_text(stmt, 2);
         c.type = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        textVal = sqlite3_column_text(stmt, 3);  
+        textVal = sqlite3_column_text(stmt, 3);
         c.email = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        textVal = sqlite3_column_text(stmt, 5); 
+        c.phone = sqlite3_column_int(stmt, 4);
+
+        textVal = sqlite3_column_text(stmt, 5);
         c.address = textVal ? reinterpret_cast<const char*>(textVal) : "";
 
-        c.phone = sqlite3_column_int(stmt, 4);   
-        c.postCode = sqlite3_column_int(stmt, 6); 
+        c.postCode = sqlite3_column_int(stmt, 6);
+
         Customers.push_back(c);
     }
 
     sqlite3_finalize(stmt);
 }
+
 
 
 void saveCustomers(sqlite3* db, std::vector<CustomerData>& Customers, const string& username) {
@@ -1159,7 +1179,7 @@ if (token.empty() || sessions.find(token) == sessions.end())
 std::string username = sessions[token].username;
     std::string role = sessions[token].role;
 
-loadProducts(db_prodexa, products, username);
+loadProducts(db_prodexa, products, username, role);
 
 
     crow::json::wvalue out;
@@ -1202,7 +1222,7 @@ if (token.empty() || sessions.find(token) == sessions.end())
 std::string username = sessions[token].username;
     std::string role = sessions[token].role;
 
-loadProducts(db_prodexa, products, username);
+loadProducts(db_prodexa, products, username, role);
 
 
     for (const auto& p : products) {
@@ -1246,7 +1266,7 @@ std::string username = sessions[token].username;
 transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 vector<sale> sales;
- loadSales(db_prodexa, sales, username);
+ loadSales(db_prodexa, sales, username, role);
  cout << "Sales loaded: " << sales.size() << endl;
 for (auto& s : sales) {
     cout << s.code << " " << s.name << " " << s.total_price << " " << s.date << endl;
@@ -1419,7 +1439,7 @@ if(token.empty() || sessions.find(token) == sessions.end())
    vector<CustomerData> Customers;
    Customers.clear();
 
-   loadCustomers(db_prodexa, Customers, username);
+   loadCustomers(db_prodexa, Customers, username,role);
 
    crow::json::wvalue out;
    out["Customers"] = crow::json::wvalue::list();
@@ -1461,7 +1481,7 @@ std::string username = sessions[token].username;
 vector<CustomerData> Customers;
 Customers.clear();
 
-loadCustomers(db_prodexa, Customers, username);
+loadCustomers(db_prodexa, Customers, username, role);
 
 
     for (const auto& c : Customers) {
@@ -1856,22 +1876,35 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
     });
 
    // --- UPDATE PRODUCT ---
-    CROW_ROUTE(app, "/update_product").methods(crow::HTTPMethod::POST)
-    ([&products](const crow::request& req){
-        auto body = crow::json::load(req.body);
-        if (!body) return crow::response(400);
+   CROW_ROUTE(app, "/update_product").methods(crow::HTTPMethod::POST)
+([&products](const crow::request& req) {
+    auto body = crow::json::load(req.body);
+    if (!body) return crow::response(400);
 
-        auto token = req.get_header_value("Authorization");
+    auto token = req.get_header_value("Authorization");
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
     std::string username = sessions[token].username;
-    std::string role = sessions[token].role;
 
-        if(updateProduct(body, products, db_prodexa, username) )
-            return crow::response(200, "Updated");
-        else
-            return crow::response(404, "Product not found");
-    });
+    // Create a Product struct from JSON
+    Product p;
+    p.owner = username;
+    p.code = body["code"].i();
+    p.brand = body["brand"].s();
+    p.name = body["name"].s();
+    p.quantity = body["quantity"].i();
+    p.stock_alert = body["stock_alert"].i();
+    p.cost = body["cost"].d();
+    p.price = body["price"].d();
+    p.discount = body["discount"].d();
+    p.vat_amount = body["vat_amount"].d();
+
+    if (updateProduct(p, products, db_prodexa, username))
+        return crow::response(200, "Updated");
+    else
+        return crow::response(404, "Product not found");
+});
+
 
    // --- DELETE PRODUCT ---
     CROW_ROUTE(app, "/delete_product").methods(crow::HTTPMethod::POST)
@@ -1894,8 +1927,8 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
 
 
   // --- ADD SALE ---
-   CROW_ROUTE(app, "/add_sale").methods(crow::HTTPMethod::POST)
-   ([&products](const crow::request& req) {
+  CROW_ROUTE(app, "/add_sale").methods(crow::HTTPMethod::POST)
+([&products](const crow::request& req) {
 
     auto body = crow::json::load(req.body);
     if (!body) return crow::response(400);
@@ -1904,11 +1937,9 @@ app.route_dynamic("/assets/<path>")([](const crow::request& req, std::string pat
     if (token.empty() || sessions.find(token) == sessions.end())
         return crow::response(401, "Not logged in");
 
-   std::string username = sessions[token].username;
+    std::string username = sessions[token].username;
     std::string role = sessions[token].role;
-transform(username.begin(), username.end(), username.begin(), ::tolower);
-
-
+    transform(username.begin(), username.end(), username.begin(), ::tolower);
 
     sale s;
     s.owner = username;
@@ -1926,49 +1957,39 @@ transform(username.begin(), username.end(), username.begin(), ::tolower);
     s.total_cost = s.cost * s.quantity;
     s.date = getCurrentDateTime();
 
-    // Local vector just for this request
-    vector<sale> sales;
-    std::cout << "Incoming customer_id: " 
-          << body["customer_id"].i() 
-          << std::endl;
+    if (s.customer_id <= 0)
+        return crow::response(400, "Customer required");
 
-    // Update product stock
-    loadProducts(db_prodexa, products, username);
+    loadProducts(db_prodexa, products, username, role);
+
+    vector<sale> sales; // declare here so it's in scope
+
     for (auto& p : products) {
         if (p.code == s.code && p.owner == username) {
-            p.quantity -= s.quantity;
-            if(p.quantity < 0) {
-                p.quantity = p.quantity + s.quantity; // revert stock change
+
+            int new_quantity = p.quantity - s.quantity;
+
+            if (new_quantity < 0)
                 return crow::response(400, "Insufficient stock");
-            }
-             if(s.customer_id == 0){
-            return crow::response(400, "Customer required");
-          }
-            if(p.quantity < p.stock_alert) {
-                sales.push_back(s);
-                if(updateProduct(body, products, db_prodexa, username) )
-                saveSales(db_prodexa, sales);
-                std::cout << "Sale struct customer_id: " 
-          << s.customer_id 
-          << std::endl;
 
-               return crow::response(403, "Sale added. Warning: Stock below alert level!");
+            p.quantity = new_quantity;
 
-            }
-            else {
-                 sales.push_back(s);
-               if(updateProduct(body, products, db_prodexa, username) )
-                saveSales(db_prodexa, sales);
-                std::cout << "Sale struct customer_id: " 
-          << s.customer_id 
-          << std::endl;
+            if (!updateProduct(p, products, db_prodexa, username))
+                return crow::response(500, "Failed to update product");
 
-                return crow::response(200, "Sale added successfully");
-            }
+            sales.push_back(s);
+            saveSales(db_prodexa, sales);
+
+            if (new_quantity < p.stock_alert)
+                return crow::response(403, "Sale added. Warning: Stock below alert level!");
+
+            return crow::response(200, "Sale added successfully");
         }
     }
-   return crow::response(404, "Product not found");
+
+    return crow::response(404, "Product not found");
 });
+
 
 // --- DELETE SALE ---
  CROW_ROUTE(app, "/delete_sale").methods(crow::HTTPMethod::POST)
