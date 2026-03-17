@@ -38,6 +38,13 @@ addUserForm.addEventListener("submit", async (e) => {
         return;
     }
 
+    if (!username || !password) return alert("Enter username & password");
+
+        if (password !== confirm_password) {
+          alert("Passwords do not match.");
+           return;
+         }
+
     const UserData = {
         username: document.getElementById("username").value,
         password: document.getElementById("password").value,
@@ -56,13 +63,6 @@ addUserForm.addEventListener("submit", async (e) => {
             },
             body: JSON.stringify(UserData)
         });
-
-         if (!username || !password) return alert("Enter username & password");
-
-        if (password !== confirm_password) {
-          alert("Passwords do not match.");
-           return;
-         }
 
         if (res.ok) {
             alert("User added successfully!");
