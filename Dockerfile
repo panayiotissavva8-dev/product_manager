@@ -40,4 +40,4 @@ RUN mkdir -p build && \
 EXPOSE $PORT
 
 # --- Start the app ---
-CMD ["./build/product_manager_app"]
+CMD ["bash","-c","export PORT=${PORT:-8080} && ./build/product_manager_app"]
