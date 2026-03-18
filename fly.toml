@@ -1,0 +1,17 @@
+app = "prodexa"  # change if name taken
+
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_DIR = "/app"
+  DB_PATH = "/app/build/prodexa.db"
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = false

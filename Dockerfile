@@ -5,7 +5,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV APP_DIR=/app
 ENV DB_PATH=$APP_DIR/build/prodexa.db
-ENV PORT=18080
+ENV PORT=8080
 
 # --- Install dependencies ---
 RUN apt-get update && apt-get install -y \
@@ -18,10 +18,6 @@ WORKDIR $APP_DIR
 
 # --- Copy project files ---
 COPY . .
-
-# --- Clone Crow and Asio headers ---
-RUN git clone https://github.com/CrowCpp/Crow.git external/crow && \
-    git clone https://github.com/chriskohlhoff/asio.git external/asio
 
 # --- Build app ---
 RUN mkdir -p build && \
@@ -44,4 +40,4 @@ RUN mkdir -p build && \
 EXPOSE $PORT
 
 # --- Start the app ---
-CMD ["bash", "-c", "./build/product_manager_app"]
+CMD ["./build/product_manager_app"]
