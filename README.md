@@ -45,3 +45,9 @@ Long-term:
 
 This is a learning-first project.
 Suggestions, issues, and pull requests are welcome.
+
+AI USAGE
+ChatGPT for debugging, learning, and final stages for deployment and GitHub copilot for inline suggestions
+The Logo is made by ChatGPT
+The texts in the written by ChatGPT example the README , terms of service etc,
+the css was made with help by ChatGPT.The rest is by me with help
